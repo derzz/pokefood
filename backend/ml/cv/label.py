@@ -7,7 +7,7 @@ def _build_system_prompt(schema: FoodLabelSchema) -> str:
     if schema.description:
         lines.append(schema.description)
     lines.append("")
-    lines.append("For the given image, identify the food's name, write a brief description of it, and select exactly one label per category from the options below.")
+    lines.append("For the given image, identify the food's name, write a brief description of it, classify its primary type as one of [meat, grains, fruits_vegetables], and select exactly one label per category from the options below.")
     lines.append("")
     for cat in schema.categories:
         header = f"Category: {cat.name}"
