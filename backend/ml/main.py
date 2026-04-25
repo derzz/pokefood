@@ -10,13 +10,12 @@ async def generate_pokefood_and_icon(base64_image: str) -> Pokefood:
     # Image detection and classification
     label_result, icon_bytes = await classify_and_iconify(bytesImage)
 
-    # Convert FoodLabelResult to list of dicts for the generator
-    labels_list = [
-        {"category": entry.category, "label": entry.label}
-        for entry in label_result.labels
-    ]
-
-    # Generate pokefood with labels from classification
-    pokefood = pokefood_generator(labels=labels_list, food_name=label_result.name, name=label_result.name, image_base64=icon_bytes)
+    pokefood = pokefood_generator(
+        labels=label_result.labels,
+        food_name=label_result.name,
+        name=label_result.name,
+        image_base64=icon_bytes,
+        food_type=label_result.type,
+    )
 
     return pokefood

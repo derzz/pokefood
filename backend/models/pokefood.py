@@ -18,5 +18,5 @@ class Pokefood(BaseModel):
     image_base64: bytes = Field(..., min_length=4)
     labels: list[str]
     hp: int = Field(..., ge=0)
-    type: Literal["fruveg", "meat", "grain"]
+    type: Literal["meat", "grains", "fruits_vegetables"]
     moves: list[Move] = Field(..., max_length=4)

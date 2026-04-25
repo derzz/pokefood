@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -67,7 +69,11 @@ class CategoryLabel(BaseModel):
     label: str = Field(description="The selected label for this category")
 
 
+FoodType = Literal["meat", "grains", "fruits_vegetables"]
+
+
 class FoodLabelResult(BaseModel):
     name: str = Field(description="The name of the food item")
     description: str = Field(description="A brief description of the food item")
+    type: FoodType = Field(description="Primary food type: 'meat', 'grains', or 'fruits_vegetables'")
     labels: list[CategoryLabel] = Field(description="One entry per category in the schema")
