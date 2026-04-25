@@ -9,6 +9,7 @@ interface StatBarProps {
   className?: string
   iconSrc?: string
   iconAlt?: string
+  showMax?: boolean
 }
 
 export const StatBar: React.FC<StatBarProps> = ({
@@ -19,6 +20,7 @@ export const StatBar: React.FC<StatBarProps> = ({
   className,
   iconSrc,
   iconAlt,
+  showMax = true,
 }) => {
   const percentage = Math.min(100, (current / max) * 100)
 
@@ -38,7 +40,7 @@ export const StatBar: React.FC<StatBarProps> = ({
         />
       </div>
       <span className="inline-block text-[10px] text-[var(--color-on-surface-variant)] md:text-xs">
-        {current} / {max}
+        {showMax ? `${current} / ${max}` : current}
       </span>
     </div>
   )

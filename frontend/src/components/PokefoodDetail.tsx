@@ -18,6 +18,8 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
   onBattle,
   className,
 }) => {
+  const statScaleMax = Math.max(pokefood.hp, pokefood.atk, 1)
+
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 ${className || ''}`}>
       <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] p-6 shadow-xl md:p-8">
@@ -43,20 +45,22 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
               <StatBar
                 label="HP"
                 current={pokefood.hp}
-                max={100}
+                max={statScaleMax}
                 color="#FF6B6B"
                 iconSrc={getStatIcon('hp')!.src}
                 iconAlt="Health Points"
+                showMax={false}
               />
             )}
             {getStatIcon('atk') && (
               <StatBar
                 label="ATK"
                 current={pokefood.atk}
-                max={100}
+                max={statScaleMax}
                 color="#FFA500"
                 iconSrc={getStatIcon('atk')!.src}
                 iconAlt="Attack Power"
+                showMax={false}
               />
             )}
           </div>
