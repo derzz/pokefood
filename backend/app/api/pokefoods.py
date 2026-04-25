@@ -54,7 +54,7 @@ async def create_pokefood_from_image(
         "pokefoods.from_image called",
         extra={"user_id": current_user.id},
     )
-    pokefood, confidence = await cv_service.get_pokefood(image_base64=request.image_base64)
+    pokefood = await cv_service.get_pokefood(image_base64=request.image_base64)
 
     record = StoredPokefood(
         user_id=current_user.id,
@@ -72,7 +72,6 @@ async def create_pokefood_from_image(
 
     return PokefoodFromImageResponse(
         pokefood=pokefood,
-        source_confidence=confidence,
         stored_pokefood_id=record.id,
     )
 

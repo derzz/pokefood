@@ -15,7 +15,7 @@ class CVService:
         self.timeout_seconds = timeout_seconds
 
     async def get_pokefood(self, image_base64: str) -> Pokefood:
-        if self.cv_service_url:
+        if False:
             return await self._get_from_http(image_base64=image_base64)
         return self._get_mock_pokefood(image_base64=image_base64)
 

@@ -29,7 +29,7 @@ class StoredPokefood(Base):
 
     personal_name: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(255))
-    image_base64: Mapped[str] = mapped_column(Text)
+    image_base64: Mapped[bytes] = mapped_column(Text)
     labels_json: Mapped[str] = mapped_column(Text)
     hp: Mapped[int] = mapped_column(Integer)
     type: Mapped[str] = mapped_column(String(32))
