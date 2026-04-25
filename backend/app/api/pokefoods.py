@@ -54,7 +54,11 @@ async def create_pokefood_from_image(
         "pokefoods.from_image called",
         extra={"user_id": current_user.id},
     )
-    pokefood = await cv_service.get_pokefood(image_base64=request.image_base64)
+    try:
+        pokefood = await cv_service.get_pokefood(image_base64=request.image_base64)
+    except Exception as e:
+        logger.error(e)
+        raise
 
     record = StoredPokefood(
         user_id=current_user.id,

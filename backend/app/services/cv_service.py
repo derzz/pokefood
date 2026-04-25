@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import httpx
 
-import ml.main
+from ml.main import generate_pokefood_and_icon
 from models import Move, Pokefood
 
 logger = logging.getLogger(__name__)
@@ -15,14 +15,15 @@ class CVService:
         self.timeout_seconds = timeout_seconds
 
     async def get_pokefood(self, image_base64: str) -> Pokefood:
-        if False:
+        if self.cv_service_url:
+            logger.info("Fetching Pokefood")
             return await self._get_from_http(image_base64=image_base64)
+        logger.info("Mocking Pokefood")
         return self._get_mock_pokefood(image_base64=image_base64)
 
     async def _get_from_http(self, image_base64: str) -> Pokefood:
-
-        pokefood_data = ml.main.generate_pokefood_and_icon()
-        # TODO: Call and parse into pokefood
+        pokefood_data = await generate_pokefood_and_icon(base64_image = image_base64)
+        return pokefood_data
 
     def _get_mock_pokefood(self, image_base64: str) -> Pokefood:
         logger.info("Get mock pokefood")

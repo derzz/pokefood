@@ -5,7 +5,7 @@ from ml.pokefood_generator import pokefood_generator
 from models.pokefood import Pokefood
 
 
-async def generate_pokefood_and_icon(food_name: str, name: str, base64_image: str) -> Pokefood:
+async def generate_pokefood_and_icon(base64_image: str) -> Pokefood:
     bytesImage = base64.b64decode(base64_image)
     # Image detection and classification
     label_result, icon_bytes = await classify_and_iconify(bytesImage)
@@ -17,6 +17,6 @@ async def generate_pokefood_and_icon(food_name: str, name: str, base64_image: st
     ]
 
     # Generate pokefood with labels from classification
-    pokefood = pokefood_generator(labels=labels_list, food_name=food_name, name=name, image_base64=icon_bytes)
+    pokefood = pokefood_generator(labels=labels_list, food_name=label_result.name, name=label_result.name, image_base64=icon_bytes)
 
     return pokefood
