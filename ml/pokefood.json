@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pokefood.json",
+  "title": "Pokefood",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["personal_name", "name", "image_url", "labels", "hp", "type", "moves"],
+  "properties": {
+    "personal_name": {
+      "type": "string",
+      "description": "The name entered by the user."
+    },
+    "name": {
+      "type": "string",
+      "description": "The food name, for example: burger."
+    },
+    "image_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Public URL to the food image."
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "hp": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "type": {
+      "type": "string",
+      "enum": ["fruveg", "meat", "grain"]
+    },
+    "moves": {
+      "type": "array",
+      "maxItems": 4,
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Move"
+      }
+    }
+  },
+  "$defs": {
+    "Move": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "damage"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "damage": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
