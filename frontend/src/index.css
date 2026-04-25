@@ -23,3 +23,123 @@ body {
   background-color: #1a1a2e;
   font-family: 'Press Start 2P', monospace;
 }
+
+/* ===== Battle Animations ===== */
+
+/*
+  TACKLE LOGIC
+  ============
+  The arena is laid out vertically: opponent at top, player at bottom, battle
+  log in the middle.
+
+  When the PLAYER attacks:
+    - Player sprite fires battle-lunge-up  → it translates upward and slightly
+      right, crossing the battle-log gap to visually collide with the opponent.
+    - Opponent sprite fires battle-recoil-up → it jolts upward/back and flashes
+      white, as if it absorbed the hit and was pushed away.
+
+  When the OPPONENT attacks:
+    - Opponent sprite fires battle-lunge-down → mirrors the above, diving downward
+      toward the player.
+    - Player sprite fires battle-recoil-down → jolts down/back with a white flash.
+
+  The attacker peaks at ~40 % of the keyframe duration (~190 ms into a 480 ms
+  animation), which is when the sprites are visually closest.  The recoil on the
+  target carries a 160 ms delay so it triggers right at that moment of contact.
+  A radial clash-flash div appears between them at the same instant.
+*/
+
+/* --- attacker lunges upward (player attacks) --- */
+@keyframes battle-lunge-up {
+  0%   { transform: translate3d(0,    0,   0) scale(1)    rotate(0deg); }
+  38%  { transform: translate3d(14px, -115px, 0) scale(1.22) rotate(12deg); }
+  62%  { transform: translate3d(16px, -122px, 0) scale(1.19) rotate(13deg); }
+  100% { transform: translate3d(0,    0,   0) scale(1)    rotate(0deg); }
+}
+
+/* --- attacker lunges downward (opponent attacks) --- */
+@keyframes battle-lunge-down {
+  0%   { transform: translate3d(0,     0,    0) scale(1)    rotate(0deg); }
+  38%  { transform: translate3d(-14px, 115px, 0) scale(1.22) rotate(-12deg); }
+  62%  { transform: translate3d(-16px, 122px, 0) scale(1.19) rotate(-13deg); }
+  100% { transform: translate3d(0,     0,    0) scale(1)    rotate(0deg); }
+}
+
+/* --- target recoil when hit from below (opponent is hit) --- */
+@keyframes battle-recoil-up {
+  0%   { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
+  30%  { transform: translate3d(-6px, -20px, 0) scale(0.91); filter: brightness(4); }
+  70%  { transform: translate3d(-3px, -8px,  0) scale(0.96); filter: brightness(1.2); }
+  100% { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
+}
+
+/* --- target recoil when hit from above (player is hit) --- */
+@keyframes battle-recoil-down {
+  0%   { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
+  30%  { transform: translate3d(6px, 20px, 0) scale(0.91); filter: brightness(4); }
+  70%  { transform: translate3d(3px, 8px,  0) scale(0.96); filter: brightness(1.2); }
+  100% { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
+}
+
+/* --- arena rumbles on impact --- */
+@keyframes battle-arena-shake {
+  0%   { transform: translate3d(0, 0, 0); }
+  15%  { transform: translate3d(-5px,  3px, 0); }
+  30%  { transform: translate3d( 5px, -3px, 0); }
+  50%  { transform: translate3d(-4px,  2px, 0); }
+  70%  { transform: translate3d( 3px, -2px, 0); }
+  85%  { transform: translate3d(-2px,  1px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* --- radial burst that appears at the collision point --- */
+@keyframes battle-clash-flash {
+  0%   { opacity: 0; transform: scale(0.4); }
+  20%  { opacity: 1; transform: scale(1.15); }
+  55%  { opacity: 0.75; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.7); }
+}
+
+/* utility classes */
+.battle-sprite {
+  will-change: transform;
+}
+
+.battle-sprite--lunge-up {
+  animation: battle-lunge-up 480ms cubic-bezier(0.12, 0.92, 0.22, 1) both;
+}
+
+.battle-sprite--lunge-down {
+  animation: battle-lunge-down 480ms cubic-bezier(0.12, 0.92, 0.22, 1) both;
+}
+
+/* recoil starts 160 ms after the attacker begins its lunge (≈ moment of contact) */
+.battle-sprite--recoil-up {
+  animation: battle-recoil-up 320ms ease-out 160ms both;
+}
+
+.battle-sprite--recoil-down {
+  animation: battle-recoil-down 320ms ease-out 160ms both;
+}
+
+.battle-arena--shaking {
+  animation: battle-arena-shake 340ms ease-out;
+}
+
+.battle-clash-flash {
+  pointer-events: none;
+  position: absolute;
+  inset: 35% 30%;
+  z-index: 10;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.98)  0%,
+    rgba(255, 241, 179, 0.95) 28%,
+    rgba(255, 174,  66, 0.62) 55%,
+    transparent 75%
+  );
+  mix-blend-mode: screen;
+  filter: blur(1.5px);
+  animation: battle-clash-flash 280ms ease-out forwards;
+}
