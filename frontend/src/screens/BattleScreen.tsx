@@ -64,11 +64,12 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 }) => {
   const [roomState, setRoomState] = useState<BattleRoomSnapshot | null>(null)
   const [battleLog, setBattleLog] = useState<string[]>(['Connecting to battle server...'])
-  const [playerMp, setPlayerMp] = useState(playerPokefood.mp)
   const [winnerId, setWinnerId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const websocketRef = useRef<WebSocket | null>(null)
+  const reconnectAttemptsRef = useRef(0)
+  const reconnectTimerRef = useRef<number | null>(null)
 
   const playerSnapshot = roomState?.players[matchSession.playerId] || null
   const opponentSnapshot = useMemo(() => {
@@ -82,65 +83,115 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const opponentHp = opponentSnapshot?.current_hp ?? opponentSnapshot?.pokefood?.hp ?? 0
   const isPlayerTurn = roomState?.turn_player_id === matchSession.playerId
   const isFinished = roomState?.status === 'finished' || winnerId !== null
+  const wsUrl = useMemo(() => buildBattleWebSocketUrl(matchSession), [matchSession])
+  const joinPayload = useMemo(() => buildJoinPayload(playerPokefood), [playerPokefood])
 
   useEffect(() => {
+    let isDisposed = false
+
     setBattleLog(['Connecting to battle server...'])
     setErrorMessage(null)
     setWinnerId(null)
     setIsConnected(false)
-    setPlayerMp(playerPokefood.mp)
 
-    const websocket = new WebSocket(buildBattleWebSocketUrl(matchSession))
-    websocketRef.current = websocket
-
-    websocket.onopen = () => {
-      setIsConnected(true)
-      setBattleLog((prev) => [...prev, 'Match found. Sending your Pokefood...'])
-      websocket.send(JSON.stringify({ type: 'join', payload: buildJoinPayload(playerPokefood) }))
-      websocket.send(JSON.stringify({ type: 'ready', payload: {} }))
-    }
-
-    websocket.onmessage = (messageEvent) => {
-      const incoming = JSON.parse(messageEvent.data) as WsEvent
-      if (incoming.type === 'state_update') {
-        setRoomState(incoming.payload as BattleRoomSnapshot)
-        return
-      }
-
-      if (incoming.type === 'action_result') {
-        const result = incoming.payload as BattleActionResult
-        setBattleLog((prev) => [
-          ...prev,
-          `${result.attacker_id} used ${result.move}!`,
-          `${result.defender_id} took ${result.damage} damage.`,
-        ])
-        return
-      }
-
-      if (incoming.type === 'battle_end') {
-        const result = incoming.payload as BattleActionResult
-        setWinnerId(result.winner_id)
-        setBattleLog((prev) => [...prev, result.winner_id === matchSession.playerId ? 'Victory!' : 'Defeat!'])
-        return
-      }
-
-      if (incoming.type === 'error') {
-        const payload = incoming.payload as { message?: string }
-        const message = payload.message || 'Battle connection error'
-        setErrorMessage(message)
-        setBattleLog((prev) => [...prev, message])
+    const clearReconnectTimer = () => {
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current)
+        reconnectTimerRef.current = null
       }
     }
 
-    websocket.onclose = () => {
-      setIsConnected(false)
+    const connect = () => {
+      clearReconnectTimer()
+      const websocket = new WebSocket(wsUrl)
+      websocketRef.current = websocket
+
+      websocket.onopen = () => {
+        if (isDisposed || websocketRef.current !== websocket) {
+          websocket.close()
+          return
+        }
+        reconnectAttemptsRef.current = 0
+        setIsConnected(true)
+        setBattleLog((prev) => [...prev, 'Match found. Sending your Pokefood...'])
+        websocket.send(JSON.stringify({ type: 'join', payload: joinPayload }))
+        websocket.send(JSON.stringify({ type: 'ready', payload: {} }))
+      }
+
+      websocket.onmessage = (messageEvent) => {
+        if (isDisposed || websocketRef.current !== websocket) {
+          return
+        }
+        const incoming = JSON.parse(messageEvent.data) as WsEvent
+        if (incoming.type === 'state_update') {
+          setRoomState(incoming.payload as BattleRoomSnapshot)
+          return
+        }
+
+        if (incoming.type === 'action_result') {
+          const result = incoming.payload as BattleActionResult
+          setBattleLog((prev) => [
+            ...prev,
+            `${result.attacker_id} used ${result.move}!`,
+            `${result.defender_id} took ${result.damage} damage.`,
+          ])
+          return
+        }
+
+        if (incoming.type === 'battle_end') {
+          const result = incoming.payload as BattleActionResult
+          setWinnerId(result.winner_id)
+          setBattleLog((prev) => [...prev, result.winner_id === matchSession.playerId ? 'Victory!' : 'Defeat!'])
+          return
+        }
+
+        if (incoming.type === 'error') {
+          const payload = incoming.payload as { message?: string }
+          const message = payload.message || 'Battle connection error'
+          setErrorMessage(message)
+          setBattleLog((prev) => [...prev, message])
+        }
+      }
+
+      websocket.onerror = () => {
+        if (isDisposed || websocketRef.current !== websocket) {
+          return
+        }
+        setErrorMessage('Battle socket connection failed. Retrying...')
+      }
+
+      websocket.onclose = () => {
+        if (isDisposed || websocketRef.current !== websocket) {
+          return
+        }
+        setIsConnected(false)
+
+        const nextAttempt = reconnectAttemptsRef.current + 1
+        if (nextAttempt > 4) {
+          setBattleLog((prev) => [...prev, 'Could not connect to battle server. Please return and retry.'])
+          return
+        }
+
+        reconnectAttemptsRef.current = nextAttempt
+        const retryDelayMs = Math.min(1200, nextAttempt * 300)
+        setBattleLog((prev) => [...prev, `Connection dropped. Retrying (${nextAttempt}/4)...`])
+        reconnectTimerRef.current = window.setTimeout(connect, retryDelayMs)
+      }
     }
+
+    connect()
 
     return () => {
-      websocket.close()
+      isDisposed = true
+      clearReconnectTimer()
+      reconnectAttemptsRef.current = 0
+      const websocket = websocketRef.current
+      if (websocket) {
+        websocket.close()
+      }
       websocketRef.current = null
     }
-  }, [matchSession, playerPokefood])
+  }, [joinPayload, matchSession.playerId, wsUrl])
 
   const handleMoveSelect = (move: Move) => {
     const websocket = websocketRef.current
@@ -149,13 +200,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       return
     }
     if (isFinished || !isPlayerTurn) return
-    if (playerMp < move.mpCost) {
-      setBattleLog((prev) => [...prev, 'Not enough MP!'])
-      return
-    }
 
     websocket.send(JSON.stringify({ type: 'action', payload: { move: move.name } }))
-    setPlayerMp((prev) => Math.max(0, prev - move.mpCost))
   }
 
   const opponentName = opponentSnapshot?.pokefood?.personal_name || 'Waiting for opponent...'
@@ -233,13 +279,6 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             color="#FF6B6B"
             className="w-full max-w-xs"
           />
-          <StatBar
-            label="MP"
-            current={playerMp}
-            max={playerPokefood.mp}
-            color="#4169E1"
-            className="w-full max-w-xs"
-          />
         </div>
       </div>
 
@@ -252,7 +291,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                 key={move.id}
                 move={move}
                 onSelect={handleMoveSelect}
-                disabled={!isConnected || !isPlayerTurn || playerMp < move.mpCost}
+                disabled={!isConnected || !isPlayerTurn}
               />
             ))}
           </div>

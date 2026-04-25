@@ -63,7 +63,7 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             await _handle_event(room_id=room_id, player_id=player_id, event=event)
     except WebSocketDisconnect:
         logger.info("battle.websocket disconnect", extra={"room_id": room_id, "player_id": player_id})
-        await room_manager.disconnect(room_id=room_id, player_id=player_id)
+        await room_manager.disconnect(room_id=room_id, player_id=player_id, websocket=websocket)
         await room_manager.broadcast(
             room_id,
             {

@@ -51,8 +51,12 @@ class RoomManager:
 
             existing_player = room.players.get(player_id)
             if existing_player:
-                if existing_player.websocket is not None:
-                    raise RoomError("player_id already connected")
+                if existing_player.websocket is not None and existing_player.websocket is not websocket:
+                    # Allow fast reconnects (e.g., React dev remount) by replacing stale socket.
+                    try:
+                        await existing_player.websocket.close(code=1012)
+                    except Exception:
+                        pass
                 existing_player.websocket = websocket
                 return
 
@@ -60,11 +64,20 @@ class RoomManager:
                 raise RoomError("room already has 2 players")
             room.players[player_id] = PlayerState(websocket=websocket)
 
-    async def disconnect(self, room_id: str, player_id: str) -> None:
+    async def disconnect(self, room_id: str, player_id: str, websocket: Optional[WebSocket] = None) -> None:
         async with self._lock:
             room = self.rooms.get(room_id)
             if not room:
                 return
+
+            player = room.players.get(player_id)
+            if player is None:
+                return
+
+            if websocket is not None and player.websocket is not websocket:
+                # A newer socket replaced this one; ignore stale disconnect callback.
+                return
+
             room.players.pop(player_id, None)
             if not room.players or all(player.is_bot for player in room.players.values()):
                 self.rooms.pop(room_id, None)
@@ -180,9 +193,25 @@ class RoomManager:
         room = self.rooms.get(room_id)
         if not room:
             return
-        websockets = [player.websocket for player in room.players.values() if player.websocket is not None]
-        for websocket in websockets:
-            await websocket.send_json(message)
+        disconnected_ids: list[str] = []
+        for player_id, player in room.players.items():
+            websocket = player.websocket
+            if websocket is None:
+                continue
+            try:
+                await websocket.send_json(message)
+            except Exception:
+                disconnected_ids.append(player_id)
+
+        if disconnected_ids:
+            async with self._lock:
+                latest_room = self.rooms.get(room_id)
+                if not latest_room:
+                    return
+                for player_id in disconnected_ids:
+                    player = latest_room.players.get(player_id)
+                    if player:
+                        player.websocket = None
 
     def _generate_mock_pokefood(self) -> Pokefood:
         candidates = [

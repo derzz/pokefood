@@ -5,7 +5,8 @@ import type { BattleMatchSession, Move, Pokefood } from './types'
  * TODO: Replace with actual backend endpoints
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
 const ACCESS_TOKEN_KEY = 'pokefood.accessToken'
 const USER_ID_KEY = 'pokefood.userId'
 
@@ -132,9 +133,11 @@ export async function createBattleMatch(): Promise<BattleMatchSession> {
 }
 
 export function buildBattleWebSocketUrl(match: BattleMatchSession): string {
-  const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws')
-  const query = new URLSearchParams({ player_id: match.playerId })
-  return `${wsBaseUrl}/ws/battle/${match.roomId}?${query.toString()}`
+  const wsUrl = new URL(API_BASE_URL)
+  wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+  wsUrl.pathname = `/ws/battle/${encodeURIComponent(match.roomId)}`
+  wsUrl.search = new URLSearchParams({ player_id: match.playerId }).toString()
+  return wsUrl.toString()
 }
 
 function buildAuthHeaders(): HeadersInit {
