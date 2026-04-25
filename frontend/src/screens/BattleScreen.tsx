@@ -86,7 +86,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const wsUrl = useMemo(() => buildBattleWebSocketUrl(matchSession), [matchSession])
   const joinPayload = useRef(() => buildJoinPayload(playerPokefood))
 
-
+  useEffect(() => {
+    joinPayload.current = () => buildJoinPayload(playerPokefood)
+  }, [playerPokefood])
 
   useEffect(() => {
     let isDisposed = false
@@ -104,7 +106,6 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     }
 
     const connect = () => {
-      clearReconnectTimer()
       const websocket = new WebSocket(wsUrl)
       websocketRef.current = websocket
 
@@ -115,7 +116,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         }
         setIsConnected(true)
         setBattleLog((prev) => [...prev, 'Match found. Sending your Pokefood...'])
-        websocket.send(JSON.stringify({ type: 'join', payload: joinPayload.current }))
+        websocket.send(JSON.stringify({ type: 'join', payload: joinPayload.current() }))
         websocket.send(JSON.stringify({ type: 'ready', payload: {} }))
       }
 
@@ -156,7 +157,6 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           setBattleLog((prev) => [...prev, result.winner_id === matchSession.playerId ? 'Victory!' : 'Defeat!'])
           return
         }
-        reconnectAttemptsRef.current = 0 // reset failures
       }
 
       websocket.onerror = () => {
