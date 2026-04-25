@@ -155,7 +155,7 @@ function buildAuthHeaders(): HeadersInit {
 function mapBackendType(type: BackendPokefood['type']): Pokefood['type'] {
   if (type === 'meat') return 'Meat'
   if (type === 'grain') return 'Grain'
-  return 'Fruit'
+  return 'Fruit/Vegetable'
 }
 
 function mapBackendMove(move: BackendMove, idx: number): Move {

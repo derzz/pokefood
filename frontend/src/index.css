@@ -144,3 +144,50 @@ body {
   filter: blur(1.5px);
   animation: battle-clash-flash 280ms ease-out forwards;
 }
+
+/* ===== Pokefood Detail Move Name Marquee ===== */
+
+@keyframes move-name-marquee-loop {
+  0%, 16% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  64%, 80% {
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
+    opacity: 1;
+  }
+  81% {
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
+    opacity: 0;
+  }
+  81.01% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  81.02%, 100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.move-name-marquee-track {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.move-name-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.move-name-marquee--animate {
+  animation-name: move-name-marquee-loop;
+  animation-duration: var(--marquee-duration, 8s);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}

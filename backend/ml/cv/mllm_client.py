@@ -86,7 +86,7 @@ if __name__ == "__main__":
         openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
         client = MLLMClient(
             system_prompt="You are a concise assistant. Respond with JSON when asked.",
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             client=openai_client,
         )
 

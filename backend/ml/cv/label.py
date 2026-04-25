@@ -81,7 +81,7 @@ if __name__ == "__main__":
         openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
         mllm = MLLMClient(
             system_prompt="",
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             client=openai_client,
         )
         labeler = Labeler(mllm)

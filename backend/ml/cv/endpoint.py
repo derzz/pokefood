@@ -22,7 +22,7 @@ async def classify_and_iconify(
     mime = f"image/{fmt}"
 
     openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    mllm = MLLMClient(system_prompt="", model="gpt-4o-mini", client=openai_client)
+    mllm = MLLMClient(system_prompt="", model="gpt-5.4-mini", client=openai_client)
     labeler = Labeler(mllm)
 
     label_result, icon_bytes = await asyncio.gather(

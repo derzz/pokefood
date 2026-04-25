@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { Pokefood } from '../types'
 import { RarityBadge } from './RarityBadge'
 import { StatBar } from './StatBar'
@@ -10,6 +10,59 @@ interface PokefoodDetailProps {
   onClose: () => void
   onBattle?: (pokefood: Pokefood) => void
   className?: string
+}
+
+interface MoveNameMarqueeProps {
+  name: string
+}
+
+const MoveNameMarquee: React.FC<MoveNameMarqueeProps> = ({ name }) => {
+  const trackRef = useRef<HTMLSpanElement | null>(null)
+  const textRef = useRef<HTMLSpanElement | null>(null)
+  const [overflowDistance, setOverflowDistance] = useState(0)
+
+  useEffect(() => {
+    const computeOverflow = () => {
+      if (!trackRef.current || !textRef.current) {
+        return
+      }
+      const distance = Math.max(0, Math.ceil(textRef.current.scrollWidth - trackRef.current.clientWidth))
+      setOverflowDistance(distance)
+    }
+
+    computeOverflow()
+    window.addEventListener('resize', computeOverflow)
+
+    let observer: ResizeObserver | null = null
+    if (typeof ResizeObserver !== 'undefined' && trackRef.current) {
+      observer = new ResizeObserver(computeOverflow)
+      observer.observe(trackRef.current)
+    }
+
+    return () => {
+      window.removeEventListener('resize', computeOverflow)
+      if (observer) {
+        observer.disconnect()
+      }
+    }
+  }, [name])
+
+  const durationSeconds = Math.min(10, Math.max(5, 3.5 + overflowDistance / 30))
+
+  return (
+    <span ref={trackRef} className="move-name-marquee-track">
+      <span
+        ref={textRef}
+        className={`move-name-marquee text-[var(--color-on-surface)] ${overflowDistance > 0 ? 'move-name-marquee--animate' : ''}`}
+        style={{
+          ['--marquee-distance' as string]: `${overflowDistance}px`,
+          ['--marquee-duration' as string]: `${durationSeconds}s`,
+        }}
+      >
+        {name}
+      </span>
+    </span>
+  )
 }
 
 export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
@@ -133,7 +186,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
               const typeIcon = getTypeIcon(move.type.toLowerCase().replace(/\s+/g, '_'))
               return (
                 <li key={move.id} className="flex items-center justify-between gap-2 rounded-lg border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-3 py-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
                     {typeIcon && (
                       <InlineIcon
                         src={typeIcon.src}
@@ -141,7 +194,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
                         size="sm"
                       />
                     )}
-                    <span className="truncate text-[var(--color-on-surface)]">{move.name}</span>
+                    <MoveNameMarquee name={move.name} />
                   </span>
                   <span className="flex-shrink-0 text-[var(--color-on-surface-variant)]">PWR {move.power}</span>
                 </li>
