@@ -1,21 +1,30 @@
+import logging
+import asyncio
+
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from app.core.room_manager import RoomError, RoomManager
+from app.core.battle_runtime import room_manager
+from app.core.room_manager import RoomError
 from models.battle import WsEvent
 from models import Pokefood
 
 router = APIRouter(tags=["battle"])
-room_manager = RoomManager()
+logger = logging.getLogger(__name__)
 
 
 @router.websocket("/ws/battle/{room_id}")
 async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = Query(...)) -> None:
+    logger.info("battle.websocket connect", extra={"room_id": room_id, "player_id": player_id})
     await websocket.accept()
 
     try:
         await room_manager.connect(room_id=room_id, player_id=player_id, websocket=websocket)
     except RoomError as exc:
+        logger.info(
+            "battle.websocket rejected",
+            extra={"room_id": room_id, "player_id": player_id, "error": str(exc)},
+        )
         await websocket.send_json({"type": "error", "payload": {"message": str(exc)}})
         await websocket.close(code=4400)
         return
@@ -30,9 +39,22 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             },
         },
     )
+    snapshot = await room_manager.snapshot(room_id)
+    if len(snapshot.players) == 2:
+        opponent_id = next((pid for pid in snapshot.players if pid != player_id), None)
+        await websocket.send_json(
+            {
+                "type": "matched",
+                "payload": {
+                    "room_id": room_id,
+                    "player_id": player_id,
+                    "opponent_id": opponent_id,
+                },
+            }
+        )
     await room_manager.broadcast(
         room_id,
-        {"type": "state_update", "payload": (await room_manager.snapshot(room_id)).model_dump(mode="json")},
+        {"type": "state_update", "payload": snapshot.model_dump(mode="json")},
     )
 
     try:
@@ -40,7 +62,8 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             event = WsEvent.model_validate(await websocket.receive_json())
             await _handle_event(room_id=room_id, player_id=player_id, event=event)
     except WebSocketDisconnect:
-        await room_manager.disconnect(room_id=room_id, player_id=player_id)
+        logger.info("battle.websocket disconnect", extra={"room_id": room_id, "player_id": player_id})
+        await room_manager.disconnect(room_id=room_id, player_id=player_id, websocket=websocket)
         await room_manager.broadcast(
             room_id,
             {
@@ -49,10 +72,18 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             },
         )
     except RoomError as exc:
+        logger.info(
+            "battle.websocket room_error",
+            extra={"room_id": room_id, "player_id": player_id, "error": str(exc)},
+        )
         await websocket.send_json({"type": "error", "payload": {"message": str(exc)}})
 
 
 async def _handle_event(room_id: str, player_id: str, event: WsEvent) -> None:
+    logger.info(
+        "battle.websocket event",
+        extra={"room_id": room_id, "player_id": player_id, "event_type": event.type},
+    )
     if event.type == "join":
         payload = event.payload.get("pokefood", event.payload.get("monster", {}))
         pokefood = _parse_join_pokefood(payload)
@@ -85,6 +116,18 @@ async def _handle_event(room_id: str, player_id: str, event: WsEvent) -> None:
 
         if result.get("winner_id"):
             await room_manager.broadcast(room_id, {"type": "battle_end", "payload": result})
+            return
+
+        bot_result = await room_manager.perform_bot_turn(room_id=room_id)
+        if bot_result is not None:
+            await asyncio.sleep(0.35)
+            await room_manager.broadcast(room_id, {"type": "action_result", "payload": bot_result})
+            await room_manager.broadcast(
+                room_id,
+                {"type": "state_update", "payload": (await room_manager.snapshot(room_id)).model_dump(mode="json")},
+            )
+            if bot_result.get("winner_id"):
+                await room_manager.broadcast(room_id, {"type": "battle_end", "payload": bot_result})
         return
 
     if event.type == "ping":

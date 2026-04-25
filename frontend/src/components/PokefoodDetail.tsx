@@ -49,12 +49,6 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
               max={100}
               color="#FFA500"
             />
-            <StatBar
-              label="MP"
-              current={pokefood.mp}
-              max={100}
-              color="#4169E1"
-            />
           </div>
 
           <div className="rounded-xl bg-[var(--color-surface-container-high)] p-4">

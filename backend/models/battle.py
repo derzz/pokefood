@@ -22,3 +22,11 @@ class BattleRoomSnapshot(BaseModel):
 class WsEvent(BaseModel):
     type: str
     payload: dict = Field(default_factory=dict)
+
+
+class MatchmakeResponse(BaseModel):
+    room_id: str
+    player_id: str
+    opponent_id: str
+    mode: Literal["mock"] = "mock"
+

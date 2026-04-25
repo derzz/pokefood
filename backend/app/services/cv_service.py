@@ -11,13 +11,13 @@ class CVService:
         self.cv_service_url = cv_service_url
         self.timeout_seconds = timeout_seconds
 
-    async def get_pokefood(self, bucket: str, object_path: str) -> Tuple[Pokefood, float]:
+    async def get_pokefood(self, image_base64: str) -> Tuple[Pokefood, float]:
         if self.cv_service_url:
-            return await self._get_from_http(bucket=bucket, object_path=object_path)
-        return self._get_mock_pokefood(bucket=bucket, object_path=object_path)
+            return await self._get_from_http(image_base64=image_base64)
+        return self._get_mock_pokefood(image_base64=image_base64)
 
-    async def _get_from_http(self, bucket: str, object_path: str) -> Tuple[Pokefood, float]:
-        payload = {"bucket": bucket, "object_path": object_path}
+    async def _get_from_http(self, image_base64: str) -> Tuple[Pokefood, float]:
+        payload = {"image_base64": image_base64}
         async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
             response = await client.post(f"{self.cv_service_url.rstrip('/')}/getMonster", json=payload)
             response.raise_for_status()
@@ -28,8 +28,8 @@ class CVService:
         pokefood = Pokefood.model_validate(pokefood_data)
         return pokefood, confidence
 
-    def _get_mock_pokefood(self, bucket: str, object_path: str) -> Tuple[Pokefood, float]:
-        seed = int(hashlib.md5(f"{bucket}:{object_path}".encode("utf-8")).hexdigest()[:8], 16)
+    def _get_mock_pokefood(self, image_base64: str) -> Tuple[Pokefood, float]:
+        seed = int(hashlib.md5(image_base64.encode("utf-8")).hexdigest()[:8], 16)
 
         food_names = ["burger", "sushi", "broccoli", "tofu"]
         personal_names = ["Pikaberry", "Sushizard", "Broccolisaur", "Tofurtle"]
@@ -51,7 +51,7 @@ class CVService:
         pokefood = Pokefood(
             personal_name=personal_name,
             name=food_name,
-            image_url=f"https://storage.googleapis.com/{bucket}/{object_path.lstrip('/')}",
+            image_base64=image_base64,
             labels=[food_name, pokefood_type, "mock"],
             hp=hp,
             type=pokefood_type,
