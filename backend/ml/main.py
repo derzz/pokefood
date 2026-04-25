@@ -1,10 +1,10 @@
 import base64
 
-from fastapi import FastAPI
-from pydantic import BaseModel, Field, HttpUrl
-from typing import Literal
+from fastapi import FastAPI, Form
 
 from ml.cv.endpoint import classify_and_iconify
+from ml.pokefood_generator import pokefood_generator
+from models.pokefood import Pokefood
 
 app = FastAPI(title="FastAPI Starter", version="0.1.0")
 
@@ -13,28 +13,24 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
-class Move(BaseModel):
-    name: str
-    damage: int
-
-
-class Pokefood(BaseModel):
-    personal_name: str
-    name: str
-    image_url: HttpUrl
-    labels: list[str] = Field(default_factory=list)
-    hp: int = Field(ge=0)
-    type: Literal["fruveg", "meat", "grain"]
-    moves: list[Move] = Field(default_factory=list, max_length=4)
-
-
 @app.post("/generate-pokefood", response_model=Pokefood)
-def pokefood_generation(food_name: str, name: str, base64Image: str)-> Pokefood:
+async def pokefood_generation_endpoint(food_name: str = Form(...), name: str = Form(...), base64Image: str = Form(...)) -> Pokefood:
     bytesImage = base64.b64decode(base64Image)
-    # Image detection over here and return labels
-    labels, icon = classify_and_iconify(bytesImage)
-    icon = base64.b64decode(icon)
+    # Image detection and classification
+    label_result, icon_bytes = await classify_and_iconify(bytesImage)
 
-    # Pokefood generation over here
-    ret = pokefood_generation(labels, food_name, name, icon)
-    return ret
+    # Convert FoodLabelResult to list of dicts for the generator
+    labels_list = [
+        {"category": entry.category, "label": entry.label}
+        for entry in label_result.labels
+    ]
+
+    # Generate pokefood with labels from classification
+    pokefood = pokefood_generator(
+        labels=labels_list,
+        food_name=food_name,
+        name=name,
+        image_url=None,  # Will use default placeholder or add actual URL handling if needed
+    )
+
+    return pokefood

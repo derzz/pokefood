@@ -1,0 +1,25 @@
+meta {
+  name: generate-pokefood
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8000/generate-pokefood
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Content-Type: multipart/form-data
+}
+
+body:multipart-form {
+  food_name: Sushizard
+  name: sushi
+  base64Image: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+}
+
+settings {
+  encodeUrl: false
+}
