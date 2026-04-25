@@ -15,12 +15,14 @@ from models.image_input import PokefoodFromImageRequest, PokefoodFromImageRespon
 from models.pokefood import Move, Pokefood
 from models.stored_pokefood import StoredPokefoodResponse
 
+import base64
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, field_validator
+
 router = APIRouter(prefix="/api/v1/pokefoods", tags=["pokefoods"])
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-_cv_service = CVService(cv_service_url=os.getenv("CV_SERVICE_URL"))
-
+_cv_service = CVService()
 
 def get_cv_service() -> CVService:
     return _cv_service

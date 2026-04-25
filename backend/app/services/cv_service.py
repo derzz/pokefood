@@ -10,18 +10,15 @@ from models import Move, Pokefood
 logger = logging.getLogger(__name__)
 
 class CVService:
-    def __init__(self, cv_service_url: Optional[str] = None, timeout_seconds: float = 5.0) -> None:
-        self.cv_service_url = cv_service_url
-        self.timeout_seconds = timeout_seconds
 
     async def get_pokefood(self, image_base64: str) -> Pokefood:
-        if self.cv_service_url:
+        if True:
             logger.info("Fetching Pokefood")
-            return await self._get_from_http(image_base64=image_base64)
+            return await self._get_from_ml(image_base64=image_base64)
         logger.info("Mocking Pokefood")
         return self._get_mock_pokefood(image_base64=image_base64)
 
-    async def _get_from_http(self, image_base64: str) -> Pokefood:
+    async def _get_from_ml(self, image_base64: str) -> Pokefood:
         logger.info("CV pipeline starting (input_len=%d)", len(image_base64))
         try:
             pokefood_data = await generate_pokefood_and_icon(base64_image=image_base64)

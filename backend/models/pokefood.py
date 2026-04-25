@@ -15,7 +15,7 @@ class Pokefood(BaseModel):
 
     personal_name: str
     name: str
-    image_base64: bytes = Field(..., min_length=4)
+    image_base64: str = Field(..., min_length=4)
     labels: list[str]
     hp: int = Field(..., ge=0)
     type: Literal["fruveg", "meat", "grain"]

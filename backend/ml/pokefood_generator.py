@@ -5,6 +5,7 @@ import json
 import logging
 import random
 import re
+from base64 import b64encode
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
@@ -197,7 +198,7 @@ def pokefood_generator(
         return Pokefood(
             personal_name=food_name,
             name=name,
-            image_base64=image_base64,
+            image_base64=b64encode(image_base64).decode("ascii"),
             labels=normalized_labels,
             hp=hp,
             type=pokefood_type,
