@@ -5,8 +5,12 @@ description = "Backend interfaces for monster creation and WebSocket battle room
 readme = "readme.md"
 requires-python = ">=3.13"
 dependencies = [
+  "aiohttp>=3.13.5",
   "fastapi==0.136.1",
   "httpx==0.28.1",
+  "openai>=2.32.0",
+  "pillow>=12.2.0",
+  "python-dotenv>=1.2.2",
   "uvicorn[standard]==0.46.0",
   "sqlalchemy==2.0.43",
   "PyJWT==2.10.1",
