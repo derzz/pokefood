@@ -12,7 +12,6 @@ class FoodLabelSchema(BaseModel):
     description: str | None = Field(default=None, description="Overall description of the labeling schema")
 
 
-# Ready-to-use schema for food tagging.
 DEFAULT_FOOD_LABEL_SCHEMA = FoodLabelSchema(
     description="Food labeling schema covering heritage, preparation, nutrition, and serving traits.",
     categories=[
@@ -63,3 +62,10 @@ DEFAULT_FOOD_LABEL_SCHEMA = FoodLabelSchema(
         ),
     ],
 )
+class CategoryLabel(BaseModel):
+    category: str = Field(description="The category name, matching one of the schema's category names")
+    label: str = Field(description="The selected label for this category")
+
+
+class FoodLabelResult(BaseModel):
+    labels: list[CategoryLabel] = Field(description="One entry per category in the schema")
