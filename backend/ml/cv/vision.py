@@ -120,7 +120,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     async def _test() -> None:
-        path = Path(__file__).parent.parent.parent / "src/tests/chicken.png"
+        path = Path(__file__).parent / "chicken.png"
         image_bytes = path.read_bytes()
         result = await crop_food_dish(image_bytes)
         from PIL import Image as _Image
