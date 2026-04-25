@@ -1,0 +1,341 @@
+{
+  "regional_heritage": {
+    "european": [
+      {
+        "move_name": "Colonization",
+        "description": "A sweeping claim of territory that hits harder against unfamiliar types.",
+        "base_dmg": 20,
+        "cond_type": ["meat", "grains", "fruits_vegetables"],
+        "cond_dmg": 20
+      },
+      {
+        "move_name": "Bubonic Plague",
+        "description": "An unstoppable wave of historical devastation.",
+        "base_dmg": 35
+      },
+      {
+        "move_name": "Industrial Revolution",
+        "description": "Mass production that steamrolls through agricultural staples.",
+        "base_dmg": 20,
+        "cond_type": ["grains"],
+        "cond_dmg": 35
+      }
+    ],
+    "mediterranean_middle_eastern": [
+      {
+        "move_name": "Silk Road Spice Trade",
+        "description": "A valuable exchange that peaks when served as a starter.",
+        "base_dmg": 15
+      },
+      {
+        "move_name": "Olive Oil Press",
+        "description": "Pure extraction that perfectly complements fresh produce.",
+        "base_dmg": 20,
+        "cond_type": ["fruits_vegetables"],
+        "cond_dmg": 30
+      }
+    ],
+    "east_southwest_asian": [
+      {
+        "move_name": "Rice Paddy Harvest",
+        "description": "A massive yield that requires a period of rest afterward.",
+        "base_dmg": 25
+      },
+      {
+        "move_name": "Imperial Palace Banquet",
+        "description": "A grand feast that spills over to damage the entire enemy party.",
+        "base_dmg": 15
+      }
+    ],
+    "latin_american_caribbean": [
+      {
+        "move_name": "Volcanic Ash Fertile Soil",
+        "description": "Mineral-rich soil that makes starch-heavy types crumble.",
+        "base_dmg": 15,
+        "cond_type": ["grains"],
+        "cond_dmg": 30
+      },
+      {
+        "move_name": "Salsa Dance Fiesta",
+        "description": "A rhythmic celebration of vibrant, fresh ingredients.",
+        "base_dmg": 20
+      }
+    ],
+    "south_asian_india": [
+      {
+        "move_name": "Monsoon Spice Blend",
+        "description": "A storm of seasoning that strikes multiple times.",
+        "base_dmg": 10
+      },
+      {
+        "move_name": "Ancient Ayurvedic Recipe",
+        "description": "Traditional wisdom that expertly breaks down heavy proteins.",
+        "base_dmg": 25,
+        "cond_type": ["meat"],
+        "cond_dmg": 35
+      }
+    ]
+  },
+  "preparation_method": {
+    "raw": [
+      {
+        "move_name": "Natural Snap",
+        "description": "The crisp bite of nature that dominates other plant life.",
+        "base_dmg": 20,
+        "cond_type": ["fruits_vegetables"],
+        "cond_dmg": 30
+      },
+      {
+        "move_name": "Uncooked Vitality",
+        "description": "Pure, unadulterated energy straight from the source.",
+        "base_dmg": 25
+      }
+    ],
+    "braised": [
+      {
+        "move_name": "Slow Soaking",
+        "description": "A deep, penetrating heat that tenderizes everything.",
+        "base_dmg": 35
+      },
+      {
+        "move_name": "Pot Roast Pressure",
+        "description": "Heavy pressure that melts through even the toughest proteins.",
+        "base_dmg": 20,
+        "cond_type": ["meat"],
+        "cond_dmg": 30
+      }
+    ],
+    "fried": [
+      {
+        "move_name": "Oil Splatter",
+        "description": "Searing hot oil that punishes meat-based targets.",
+        "base_dmg": 25,
+        "cond_type": ["meat"],
+        "cond_dmg": 35
+      },
+      {
+        "move_name": "Golden Crust Strike",
+        "description": "A crunchy, satisfying blow from a hardened exterior.",
+        "base_dmg": 20
+      }
+    ],
+    "bake": [
+      {
+        "move_name": "Oven Rise",
+        "description": "Building heat that grows more powerful with every turn.",
+        "base_dmg": 15
+      },
+      {
+        "move_name": "Dry Heat Blast",
+        "description": "A scorching gust of air from the oven's core.",
+        "base_dmg": 25
+      }
+    ]
+  },
+  "health_quality": {
+    "whole_foods": [
+      {
+        "move_name": "Nutrient Punch",
+        "description": "A solid hit backed by high nutritional density.",
+        "base_dmg": 20
+      },
+      {
+        "move_name": "Fiber Force",
+        "description": "Dense roughage that pushes right through grain-based foes.",
+        "base_dmg": 15,
+        "cond_type": ["grains"],
+        "cond_dmg": 30
+      }
+    ],
+    "processed": [
+      {
+        "move_name": "Chemical Burn",
+        "description": "Artificial additives that react poorly with natural produce.",
+        "base_dmg": 15,
+        "cond_type": ["fruits_vegetables"],
+        "cond_dmg": 25
+      },
+      {
+        "move_name": "Preservative Strike",
+        "description": "A strike that lingers long after the initial hit.",
+        "base_dmg": 20
+      }
+    ],
+    "ultra_processed": [
+      {
+        "move_name": "Sugar Rush",
+        "description": "An explosive burst of energy that leaves the user drained.",
+        "base_dmg": 40
+      },
+      {
+        "move_name": "Sodium Surge",
+        "description": "An overwhelming wave of salt that dehydrates the target.",
+        "base_dmg": 30
+      }
+    ]
+  },
+  "meal_course": {
+    "appetizer": [
+      {
+        "move_name": "Small Bite",
+        "description": "A quick, light attack designed to catch the opponent off guard.",
+        "base_dmg": 10
+      },
+      {
+        "move_name": "Palate Cleanser",
+        "description": "A refreshing strike that resets the field.",
+        "base_dmg": 20
+      }
+    ],
+    "entree": [
+      {
+        "move_name": "Heavy Hitter",
+        "description": "A massive, filling blow that crushes meat-based opponents.",
+        "base_dmg": 25,
+        "cond_type": ["meat"],
+        "cond_dmg": 30
+      },
+      {
+        "move_name": "Main Event",
+        "description": "A decisive finishing move that requires total exertion.",
+        "base_dmg": 35
+      }
+    ],
+    "dessert": [
+      {
+        "move_name": "Sugar Spike",
+        "description": "A sweet assault that overloads grain-based defenses.",
+        "base_dmg": 15,
+        "cond_type": ["grains"],
+        "cond_dmg": 30
+      },
+      {
+        "move_name": "Rich Finish",
+        "description": "A dense and heavy strike to end the battle.",
+        "base_dmg": 25
+      }
+    ]
+  },
+  "temperature": {
+    "cold": [
+      {
+        "move_name": "Brain Freeze",
+        "description": "A numbing chill that shocks the system.",
+        "base_dmg": 20
+      },
+      {
+        "move_name": "Chilled Impact",
+        "description": "Cold storage strike that freezes meat-heavy targets.",
+        "base_dmg": 15,
+        "cond_type": ["meat"],
+        "cond_dmg": 25
+      }
+    ],
+    "hot": [
+      {
+        "move_name": "Steam Blast",
+        "description": "Scalding vapor that burns on contact.",
+        "base_dmg": 20
+      },
+      {
+        "move_name": "Searing Heat",
+        "description": "White-hot intensity that damages both the target and the user.",
+        "base_dmg": 30
+      }
+    ],
+    "room_temperature": [
+      {
+        "move_name": "Balanced Strike",
+        "description": "A neutral, consistent attack with no drawbacks.",
+        "base_dmg": 18
+      },
+      {
+        "move_name": "Stable Impact",
+        "description": "A steady blow that relies on equilibrium.",
+        "base_dmg": 20
+      }
+    ]
+  },
+  "texture": {
+    "crispy": [
+      {
+        "move_name": "Crunch Factor",
+        "description": "A sharp, audible strike that shatters dry grains.",
+        "base_dmg": 20,
+        "cond_type": ["grains"],
+        "cond_dmg": 30
+      },
+      {
+        "move_name": "Shard Strike",
+        "description": "Jagged edges that pierce through the opponent.",
+        "base_dmg": 25
+      }
+    ],
+    "liquid": [
+      {
+        "move_name": "Drown",
+        "description": "An overwhelming flow that engulfs the target.",
+        "base_dmg": 20
+      },
+      {
+        "move_name": "Tidal Wave",
+        "description": "A washing force that sweeps away lighter vegetables.",
+        "base_dmg": 15,
+        "cond_type": ["fruits_vegetables"],
+        "cond_dmg": 25
+      }
+    ],
+    "chewy": [
+      {
+        "move_name": "Jaw Fatigue",
+        "description": "A relentless, gummy assault that wears the target down.",
+        "base_dmg": 10
+      },
+      {
+        "move_name": "Elastic Snap",
+        "description": "A flexible strike that whips forward with high speed.",
+        "base_dmg": 20
+      }
+    ]
+  },
+  "prep_time": {
+    "quick": [
+      {
+        "move_name": "Flash Fry",
+        "description": "High heat, high speed, and immediate results.",
+        "base_dmg": 15
+      },
+      {
+        "move_name": "Rapid Seasoning",
+        "description": "A fast dusting of flavor that hits before the target can react.",
+        "base_dmg": 20
+      }
+    ],
+    "slow_cook": [
+      {
+        "move_name": "Patience Pays",
+        "description": "A long-awaited blow that delivers devastating power.",
+        "base_dmg": 50
+      },
+      {
+        "move_name": "Deep Flavor Infusion",
+        "description": "A concentrated attack that has simmered to perfection.",
+        "base_dmg": 30
+      }
+    ],
+    "no_cook": [
+      {
+        "move_name": "Instant Impact",
+        "description": "No prep required—just straight to the action.",
+        "base_dmg": 15
+      },
+      {
+        "move_name": "Fresh Assembly",
+        "description": "A quick combination of fresh garden ingredients.",
+        "base_dmg": 20,
+        "cond_type": ["fruits_vegetables"],
+        "cond_dmg": 25
+      }
+    ]
+  }
+}
