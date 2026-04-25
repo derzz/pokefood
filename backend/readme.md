@@ -6,8 +6,8 @@ This backend now supports user accounts, JWT auth, and per-user pokefood storage
 
 ```bash
 cd /Users/vincentguo/PycharmProjects/pokefood/backend
-/Users/vincentguo/Library/Python/3.9/bin/uv sync --dev
-/Users/vincentguo/Library/Python/3.9/bin/uv run uvicorn app.main:app --reload --port 8000
+uv sync --dev
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
 By default, data is persisted in SQLite at `backend/pokefood.db`.
