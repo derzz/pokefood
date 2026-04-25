@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildBattleWebSocketUrl } from '../api'
 import type {
   BattleActionResult,
@@ -57,6 +57,22 @@ function buildJoinPayload(pokefood: Pokefood): Record<string, unknown> {
   }
 }
 
+type BattleAnimationPhase = 'idle' | 'player-attack' | 'opponent-attack'
+
+/** Total window (ms) before animation state resets to idle. */
+const ATTACK_ANIMATION_TOTAL_MS = 580
+
+function spriteClasses(side: 'player' | 'opponent', phase: BattleAnimationPhase): string {
+  if (side === 'player') {
+    if (phase === 'player-attack') return 'battle-sprite--lunge-right'
+    if (phase === 'opponent-attack') return 'battle-sprite--recoil-left'
+  } else {
+    if (phase === 'opponent-attack') return 'battle-sprite--lunge-left'
+    if (phase === 'player-attack') return 'battle-sprite--recoil-right'
+  }
+  return ''
+}
+
 export const BattleScreen: React.FC<BattleScreenProps> = ({
   playerPokefood,
   matchSession,
@@ -67,9 +83,12 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const [winnerId, setWinnerId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [battleAnimation, setBattleAnimation] = useState<BattleAnimationPhase>('idle')
+  const [showClashFlash, setShowClashFlash] = useState(false)
   const websocketRef = useRef<WebSocket | null>(null)
   const reconnectAttemptsRef = useRef(0)
   const reconnectTimerRef = useRef<number | null>(null)
+  const animationTimerRef = useRef<number | null>(null)
 
   const playerSnapshot = roomState?.players[matchSession.playerId] || null
   const opponentSnapshot = useMemo(() => {
@@ -85,6 +104,20 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const isFinished = roomState?.status === 'finished' || winnerId !== null
   const wsUrl = useMemo(() => buildBattleWebSocketUrl(matchSession), [matchSession])
   const joinPayload = useMemo(() => buildJoinPayload(playerPokefood), [playerPokefood])
+
+  const triggerAttackAnimation = useCallback((attacker: 'player' | 'opponent') => {
+    if (animationTimerRef.current !== null) {
+      window.clearTimeout(animationTimerRef.current)
+      animationTimerRef.current = null
+    }
+    setBattleAnimation(attacker === 'player' ? 'player-attack' : 'opponent-attack')
+    setShowClashFlash(true)
+    animationTimerRef.current = window.setTimeout(() => {
+      setBattleAnimation('idle')
+      setShowClashFlash(false)
+      animationTimerRef.current = null
+    }, ATTACK_ANIMATION_TOTAL_MS)
+  }, [])
 
   useEffect(() => {
     let isDisposed = false
@@ -130,6 +163,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
         if (incoming.type === 'action_result') {
           const result = incoming.payload as BattleActionResult
+          const attacker = result.attacker_id === matchSession.playerId ? 'player' : 'opponent'
+          triggerAttackAnimation(attacker)
           setBattleLog((prev) => [
             ...prev,
             `${result.attacker_id} used ${result.move}!`,
@@ -185,13 +220,17 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       isDisposed = true
       clearReconnectTimer()
       reconnectAttemptsRef.current = 0
+      if (animationTimerRef.current !== null) {
+        window.clearTimeout(animationTimerRef.current)
+        animationTimerRef.current = null
+      }
       const websocket = websocketRef.current
       if (websocket) {
         websocket.close()
       }
       websocketRef.current = null
     }
-  }, [joinPayload, matchSession.playerId, wsUrl])
+  }, [joinPayload, matchSession.playerId, triggerAttackAnimation, wsUrl])
 
   const handleMoveSelect = (move: Move) => {
     const websocket = websocketRef.current
@@ -222,63 +261,71 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         Exit Battle
       </button>
 
-      <div className="grid gap-4 rounded-2xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] p-4 md:grid-rows-[1fr_auto_1fr] md:p-6">
-        {/* Opponent */}
-        <div className="grid place-items-center gap-3 text-center">
-          <div className="space-y-2">
-            <h3 className="text-sm text-[var(--color-on-surface)] md:text-base">{opponentName}</h3>
-            <RarityBadge rarity="Common" />
-          </div>
-          <div className="h-40 w-40 overflow-hidden rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] md:h-48 md:w-48">
-            {opponentImage ? (
+      <div className={`relative rounded-2xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] p-4 md:p-6 ${battleAnimation !== 'idle' ? 'battle-arena--shaking' : ''}`}>
+        {/* Clash flash — appears at the horizontal midpoint between sprites */}
+        {showClashFlash && <div className="battle-clash-flash" />}
+
+        {/* Sprites side by side */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Player (left) */}
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="space-y-1">
+              <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{playerPokefood.name}</h3>
+              <RarityBadge rarity={playerPokefood.rarity} />
+            </div>
+            {/* overflow-visible so the sprite can travel outside its box during the lunge */}
+            <div className="relative flex h-36 w-36 items-center justify-center overflow-visible md:h-44 md:w-44">
               <img
-                src={opponentImage}
-                alt={opponentName}
-                className="h-full w-full object-cover"
+                src={playerPokefood.pixelArtUrl || playerPokefood.imageUrl}
+                alt={playerPokefood.name}
+                className={`battle-sprite h-full w-full object-contain ${spriteClasses('player', battleAnimation)}`.trim()}
               />
-            ) : (
-              <div className="grid h-full w-full place-items-center text-xs text-[var(--color-on-surface-variant)]">
-                Matchmaking...
-              </div>
-            )}
+            </div>
+            <StatBar
+              label="HP"
+              current={playerHp}
+              max={playerPokefood.hp}
+              color="#FF6B6B"
+              className="w-full"
+            />
           </div>
-          <StatBar
-            label="HP"
-            current={opponentHp}
-            max={opponentSnapshot?.pokefood?.hp || 1}
-            color="#FF6B6B"
-            className="w-full max-w-xs"
-          />
+
+          {/* Opponent (right) */}
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="space-y-1">
+              <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{opponentName}</h3>
+              <RarityBadge rarity="Common" />
+            </div>
+            {/* overflow-visible so the sprite can travel outside its box during the lunge */}
+            <div className="relative flex h-36 w-36 items-center justify-center overflow-visible md:h-44 md:w-44">
+              {opponentImage ? (
+                <img
+                  src={opponentImage}
+                  alt={opponentName}
+                  className={`battle-sprite h-full w-full object-contain ${spriteClasses('opponent', battleAnimation)}`.trim()}
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] text-xs text-[var(--color-on-surface-variant)]">
+                  Matchmaking...
+                </div>
+              )}
+            </div>
+            <StatBar
+              label="HP"
+              current={opponentHp}
+              max={opponentSnapshot?.pokefood?.hp || 1}
+              color="#FF6B6B"
+              className="w-full"
+            />
+          </div>
         </div>
 
         {/* Battle Log */}
-        <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] p-3 md:p-4">
+        <div className="mt-4 max-h-32 space-y-1 overflow-y-auto rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] p-3 md:p-4">
           {battleLog.map((log, idx) => (
             <p key={idx} className="text-[10px] text-[var(--color-on-surface-variant)] md:text-xs">{log}</p>
           ))}
           {errorMessage && <p className="text-[10px] text-red-400 md:text-xs">{errorMessage}</p>}
-        </div>
-
-        {/* Player */}
-        <div className="grid place-items-center gap-3 text-center">
-          <div className="space-y-2">
-            <h3 className="text-sm text-[var(--color-on-surface)] md:text-base">{playerPokefood.name}</h3>
-            <RarityBadge rarity={playerPokefood.rarity} />
-          </div>
-          <div className="h-40 w-40 overflow-hidden rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] md:h-48 md:w-48">
-            <img
-              src={playerPokefood.pixelArtUrl || playerPokefood.imageUrl}
-              alt={playerPokefood.name}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <StatBar
-            label="HP"
-            current={playerHp}
-            max={playerPokefood.hp}
-            color="#FF6B6B"
-            className="w-full max-w-xs"
-          />
         </div>
       </div>
 
