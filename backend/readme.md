@@ -1,9 +1,6 @@
 # PokeFood Backend Interface (MVP)
 
-This backend exposes two integration interfaces for the project:
-
-1. `POST /api/v1/monsters/from-image` to create a pokefood from an image in a GCP bucket.
-2. `WS /ws/battle/{room_id}?player_id={player_id}` for 2-player room battle events.
+This backend now supports user accounts, JWT auth, and per-user pokefood storage.
 
 ## Quick start
 
@@ -13,104 +10,98 @@ cd /Users/vincentguo/PycharmProjects/pokefood/backend
 /Users/vincentguo/Library/Python/3.9/bin/uv run uvicorn app.main:app --reload --port 8000
 ```
 
-## REST: Create Pokefood
+By default, data is persisted in SQLite at `backend/pokefood.db`.
 
-- **Endpoint:** `POST /api/v1/monsters/from-image`
-- **Request JSON:**
+## Authentication
+
+### Register
+
+- **Endpoint:** `POST /api/v1/auth/register`
 
 ```json
 {
-  "bucket": "pokefood-images",
-  "object_path": "uploads/bento_001.jpg"
+  "email": "ash@example.com",
+  "password": "secret123"
 }
 ```
 
-- **Response JSON (CV schema + confidence):**
+### Login
+
+- **Endpoint:** `POST /api/v1/auth/login`
+
+```json
+{
+  "email": "ash@example.com",
+  "password": "secret123"
+}
+```
+
+- **Response:**
+
+```json
+{
+  "access_token": "<jwt>",
+  "token_type": "bearer"
+}
+```
+
+Use this header on protected routes:
+
+```text
+Authorization: Bearer <jwt>
+```
+
+## Create Pokefood From Image (Protected)
+
+- **Endpoint:** `POST /api/v1/pokefoods/from-image`
+- **Auth:** required
+
+```json
+{
+  "image_base64": "aGVsbG8="
+}
+```
 
 ```json
 {
   "pokefood": {
     "personal_name": "Sushizard",
     "name": "sushi",
-    "image_url": "https://storage.googleapis.com/pokefood-images/uploads/bento_001.jpg",
+    "image_base64": "aGVsbG8=",
     "labels": ["sushi", "meat", "mock"],
     "hp": 72,
     "type": "meat",
     "moves": [
       {"name": "Crunch", "damage": 12},
-      {"name": "Sear", "damage": 16},
-      {"name": "Dash", "damage": 9}
+      {"name": "Sear", "damage": 16}
     ]
   },
-  "source_confidence": 0.5
+  "source_confidence": 0.5,
+  "stored_pokefood_id": 12
 }
 ```
 
-The `pokefood` object follows `ml/pokefood.json` and is the canonical model used across backend APIs and WebSocket battles.
+The `pokefood` object follows the project schema with `image_base64` as the image field.
 
-By default, this uses a deterministic mock parser. To call CV directly:
+## My Stored Pokefoods (Protected)
 
-```bash
-export CV_SERVICE_URL="http://localhost:9000"
-```
+### List mine
 
-The backend then calls `POST $CV_SERVICE_URL/getMonster` with:
+- **Endpoint:** `GET /api/v1/pokefoods`
+- **Alias:** `GET /api/v1/pokefoods/all`
 
-```json
-{
-  "bucket": "...",
-  "object_path": "..."
-}
-```
+### Get one of mine
 
-## WebSocket: Battle Room
+- **Endpoint:** `GET /api/v1/pokefoods/{pokefood_id}`
+
+Stored pokefoods are saved with base64 image content (no bucket/object-path fields).
+
+## WebSocket Battle Room
 
 - **Endpoint:** `ws://localhost:8000/ws/battle/{room_id}?player_id=p1`
 - **Room size:** exactly 2 players
 
-### Client -> server events
-
-- `join` (send a `pokefood` object)
-
-```json
-{
-  "type": "join",
-  "payload": {
-    "pokefood": {
-      "personal_name": "Sushizard",
-      "name": "sushi",
-      "image_url": "https://example.com/sushi.jpg",
-      "labels": ["sushi", "meat"],
-      "hp": 72,
-      "type": "meat",
-      "moves": [
-        {"name": "Chop", "damage": 12},
-        {"name": "Roast", "damage": 9}
-      ]
-    }
-  }
-}
-```
-
-- `ready`
-
-```json
-{"type": "ready", "payload": {}}
-```
-
-- `action` (send one move name from your pokefood moveset)
-
-```json
-{"type": "action", "payload": {"move": "Chop"}}
-```
-
-### Server -> client events
-
-- `connected`
-- `state_update`
-- `action_result`
-- `battle_end`
-- `error`
+Join with a `pokefood` payload and attack using one move name from its `moves` list.
 
 ## Tests
 

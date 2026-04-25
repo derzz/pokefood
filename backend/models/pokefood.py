@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Move(BaseModel):
@@ -15,9 +15,8 @@ class Pokefood(BaseModel):
 
     personal_name: str
     name: str
-    image_url: HttpUrl
+    image_base64: str = Field(..., min_length=4)
     labels: list[str]
     hp: int = Field(..., ge=0)
     type: Literal["fruveg", "meat", "grain"]
     moves: list[Move] = Field(..., max_length=4)
-
