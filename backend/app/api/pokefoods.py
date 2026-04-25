@@ -2,6 +2,7 @@ import json
 import os
 import logging
 
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,6 +18,7 @@ from models.stored_pokefood import StoredPokefoodResponse
 router = APIRouter(prefix="/api/v1/pokefoods", tags=["pokefoods"])
 logger = logging.getLogger(__name__)
 
+load_dotenv()
 _cv_service = CVService(cv_service_url=os.getenv("CV_SERVICE_URL"))
 
 

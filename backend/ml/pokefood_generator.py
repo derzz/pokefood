@@ -178,7 +178,7 @@ def pokefood_generator(
     labels: Sequence[Any],
     food_name: str,
     name: str,
-    image_url: str | None = None,
+    image_base64: bytes,
 ) -> Pokefood:
     normalized_labels = _normalize_labels(labels)
     if not normalized_labels:
@@ -187,12 +187,11 @@ def pokefood_generator(
     pokefood_type = _infer_type(labels=normalized_labels, food_name=food_name, name=name)
     hp = _derive_hp(labels=normalized_labels, food_name=food_name, name=name)
     moves = _build_moves(normalized_labels)
-    resolved_image_url: Any = image_url or f"https://example.com/pokefood/{_slugify(name or food_name)}.jpg"
 
     return Pokefood(
         personal_name=food_name,
         name=name,
-        image_url=resolved_image_url,
+        image_base64=image_base64,
         labels=normalized_labels,
         hp=hp,
         type=pokefood_type,
