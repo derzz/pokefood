@@ -65,7 +65,7 @@ if __name__ == "__main__":
     )
 
     async def _test() -> None:
-        path = Path(__file__).parent.parent.parent / "src/tests/chicken.png"
+        path = Path(__file__).parent / "chicken.png"
         raw = path.read_bytes()
 
         img = Image.open(BytesIO(raw))
