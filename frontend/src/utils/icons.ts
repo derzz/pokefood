@@ -106,12 +106,26 @@ export type TypeIconKey = keyof typeof TYPE_ICONS
 export type StatIconKey = keyof typeof STAT_ICONS
 export type NutritionIconKey = keyof typeof NUTRITION_ICONS
 
+const TYPE_ICON_ALIASES: Record<string, TypeIconKey> = {
+  meat: 'meat',
+  grain: 'grains',
+  grains: 'grains',
+  fruveg: 'fruits_vegetables',
+  fruit: 'fruits_vegetables',
+  fruits: 'fruits_vegetables',
+  vegetable: 'fruits_vegetables',
+  vegetables: 'fruits_vegetables',
+  fruits_vegetables: 'fruits_vegetables'
+}
+
 export const getCategoryIcon = (key: string) => {
   return CATEGORY_ICONS[key as CategoryIconKey] || null
 }
 
 export const getTypeIcon = (key: string) => {
-  return TYPE_ICONS[key as TypeIconKey] || null
+  const normalizedKey = key.trim().toLowerCase().replace(/[\s-]+/g, '_')
+  const resolvedKey = TYPE_ICON_ALIASES[normalizedKey]
+  return resolvedKey ? TYPE_ICONS[resolvedKey] : null
 }
 
 export const getStatIcon = (key: string) => {
