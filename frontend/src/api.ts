@@ -55,6 +55,34 @@ type BackendDevLoginResponse = {
   token_type: 'bearer'
 }
 
+/**
+ * Register a new user account
+ */
+export async function register(email: string, password: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  })
+
+  if (!response.ok) {
+    let errorMessage = 'Registration failed'
+    try {
+      const errorData = await response.json()
+      errorMessage = errorData.detail || errorData.message || errorMessage
+    } catch {
+      errorMessage = await response.text() || errorMessage
+    }
+    throw new Error(errorMessage)
+  }
+
+}
+
 export async function login(email: string, password: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
     method: 'POST',
@@ -177,6 +205,8 @@ function toImageDataUrl(base64: string): string {
 
   return `data:image/png;base64,${base64}`
 }
+
+
 
 function mapBackendPokefoodToFrontend(
   source: BackendPokefood,
