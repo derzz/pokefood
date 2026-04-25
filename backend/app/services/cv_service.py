@@ -22,7 +22,20 @@ class CVService:
         return self._get_mock_pokefood(image_base64=image_base64)
 
     async def _get_from_http(self, image_base64: str) -> Pokefood:
-        pokefood_data = await generate_pokefood_and_icon(base64_image = image_base64)
+        logger.info("CV pipeline starting (input_len=%d)", len(image_base64))
+        try:
+            pokefood_data = await generate_pokefood_and_icon(base64_image=image_base64)
+        except Exception as exc:
+            logger.exception("CV pipeline failed: %s", exc)
+            raise
+        logger.info(
+            "CV pipeline succeeded: name=%r type=%r labels=%r moves=%d image_bytes=%d",
+            pokefood_data.name,
+            pokefood_data.type,
+            pokefood_data.labels,
+            len(pokefood_data.moves),
+            len(pokefood_data.image_base64) if pokefood_data.image_base64 else 0,
+        )
         return pokefood_data
 
     def _get_mock_pokefood(self, image_base64: str) -> Pokefood:
