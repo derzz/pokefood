@@ -1,6 +1,10 @@
+import base64
+
 from fastapi import FastAPI
 from pydantic import BaseModel, Field, HttpUrl
 from typing import Literal
+
+from ml.cv.endpoint import classify_and_iconify
 
 app = FastAPI(title="FastAPI Starter", version="0.1.0")
 
@@ -25,11 +29,12 @@ class Pokefood(BaseModel):
 
 
 @app.post("/generate-pokefood", response_model=Pokefood)
-def pokefood_generation(food_name: String, name: String, base64Image: String)-> Pokefood:
-
+def pokefood_generation(food_name: str, name: str, base64Image: str)-> Pokefood:
+    bytesImage = base64.b64decode(base64Image)
     # Image detection over here and return labels
+    labels, icon = classify_and_iconify(bytesImage)
+    icon = base64.b64decode(icon)
 
     # Pokefood generation over here
-
-    ret = Pokefood(personal_name=food_name, name=name, image_url=base64Image)
+    ret = pokefood_generation(labels, food_name, name, icon)
     return ret
