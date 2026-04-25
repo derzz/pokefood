@@ -2,6 +2,8 @@ import React from 'react'
 import type { Pokefood } from '../types'
 import { RarityBadge } from './RarityBadge'
 import { StatBar } from './StatBar'
+import { InlineIcon } from './Icon'
+import { getNutritionIcon, getTypeIcon, getStatIcon } from '../utils/icons'
 
 interface PokefoodDetailProps {
   pokefood: Pokefood
@@ -37,38 +39,93 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
           <RarityBadge rarity={pokefood.rarity} />
 
           <div className="space-y-3">
-            <StatBar
-              label="HP"
-              current={pokefood.hp}
-              max={100}
-              color="#FF6B6B"
-            />
-            <StatBar
-              label="ATK"
-              current={pokefood.atk}
-              max={100}
-              color="#FFA500"
-            />
+            {getStatIcon('hp') && (
+              <StatBar
+                label="HP"
+                current={pokefood.hp}
+                max={100}
+                color="#FF6B6B"
+                iconSrc={getStatIcon('hp')!.src}
+                iconAlt="Health Points"
+              />
+            )}
+            {getStatIcon('atk') && (
+              <StatBar
+                label="ATK"
+                current={pokefood.atk}
+                max={100}
+                color="#FFA500"
+                iconSrc={getStatIcon('atk')!.src}
+                iconAlt="Attack Power"
+              />
+            )}
           </div>
 
           <div className="rounded-xl bg-[var(--color-surface-container-high)] p-4">
             <h3 className="mb-3 text-sm text-[var(--color-on-surface)]">Nutrition</h3>
-            <ul className="space-y-1 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-              <li>Calories: {pokefood.nutritionInfo.calories}</li>
-              <li>Fat: {pokefood.nutritionInfo.fat}g</li>
-              <li>Protein: {pokefood.nutritionInfo.protein}g</li>
-              <li>Carbs: {pokefood.nutritionInfo.carbs}g</li>
-            </ul>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+                {getNutritionIcon('calories') && (
+                  <InlineIcon
+                    src={getNutritionIcon('calories')!.src}
+                    alt="Calories"
+                    size="sm"
+                  />
+                )}
+                <span>Calories: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.calories}</span></span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+                {getNutritionIcon('protein') && (
+                  <InlineIcon
+                    src={getNutritionIcon('protein')!.src}
+                    alt="Protein"
+                    size="sm"
+                  />
+                )}
+                <span>Protein: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.protein}g</span></span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+                {getNutritionIcon('carbs') && (
+                  <InlineIcon
+                    src={getNutritionIcon('carbs')!.src}
+                    alt="Carbs"
+                    size="sm"
+                  />
+                )}
+                <span>Carbs: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.carbs}g</span></span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+                {getNutritionIcon('fat') && (
+                  <InlineIcon
+                    src={getNutritionIcon('fat')!.src}
+                    alt="Fat"
+                    size="sm"
+                  />
+                )}
+                <span>Fat: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.fat}g</span></span>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-xl bg-[var(--color-surface-container-high)] p-4">
             <h3 className="mb-3 text-sm text-[var(--color-on-surface)]">Moves</h3>
-            <ul className="space-y-1 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-              {pokefood.moves.map((move) => (
-                <li key={move.id}>
-                  {move.name} ({move.type}) - PWR {move.power}
-                </li>
-              ))}
+            <ul className="space-y-2">
+              {pokefood.moves.map((move) => {
+                const typeIcon = getTypeIcon(move.type.toLowerCase().replace(/\s+/g, '_'))
+                return (
+                  <li key={move.id} className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+                    {typeIcon && (
+                      <InlineIcon
+                        src={typeIcon.src}
+                        alt={move.type}
+                        size="sm"
+                      />
+                    )}
+                    <span className="text-[var(--color-on-surface)]">{move.name}</span>
+                    <span className="text-[var(--color-on-surface-variant)]">PWR {move.power}</span>
+                  </li>
+                )
+              })}
             </ul>
           </div>
 
