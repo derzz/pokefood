@@ -6,6 +6,8 @@ import type { Pokefood, Move } from './types'
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const ACCESS_TOKEN_KEY = 'pokefood.accessToken'
+const USER_ID_KEY = 'pokefood.userId'
 
 type BackendMove = {
   name: string
@@ -35,7 +37,66 @@ type BackendStoredPokefood = {
 }
 
 function getAccessToken(): string | null {
-  return localStorage.getItem('pokefood.accessToken')
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+type BackendLoginResponse = {
+  access_token: string
+  token_type: 'bearer'
+}
+
+type BackendDevLoginResponse = {
+  access_token: string
+  token_type: 'bearer'
+}
+
+export async function login(email: string, password: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(errorBody || 'Login failed')
+  }
+
+  const payload = (await response.json()) as BackendLoginResponse
+  localStorage.setItem(ACCESS_TOKEN_KEY, payload.access_token)
+  localStorage.setItem(USER_ID_KEY, email)
+}
+
+export async function devLogin(email?: string): Promise<void> {
+  const resolvedEmail = (email || 'demo@pokefood.local').trim().toLowerCase()
+  const query = new URLSearchParams({ email: resolvedEmail })
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/dev-login?${query.toString()}`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(errorBody || 'Dev login failed')
+  }
+
+  const payload = (await response.json()) as BackendDevLoginResponse
+  localStorage.setItem(ACCESS_TOKEN_KEY, payload.access_token)
+  localStorage.setItem(USER_ID_KEY, resolvedEmail)
+}
+
+export function logout(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(USER_ID_KEY)
+}
+
+export function isAuthenticated(): boolean {
+  return Boolean(getAccessToken())
 }
 
 function buildAuthHeaders(): HeadersInit {
@@ -145,7 +206,7 @@ export async function uploadFoodImage(file: File): Promise<Pokefood> {
   }
 
   const payload = (await response.json()) as BackendCreateResponse
-  const userId = localStorage.getItem('pokefood.userId') || 'current-user'
+  const userId = localStorage.getItem(USER_ID_KEY) || 'current-user'
 
   return mapBackendPokefoodToFrontend(
     payload.pokefood,

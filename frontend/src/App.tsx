@@ -2,19 +2,34 @@ import { useEffect, useState } from 'react'
 import type { Pokefood } from './types'
 import { HomeScreen } from './screens/HomeScreen'
 import { BattleScreen } from './screens/BattleScreen'
-import { getUserCollection, uploadFoodImage } from './api'
+import { LoginScreen } from './screens/LoginScreen'
+import {
+  devLogin,
+  getUserCollection,
+  isAuthenticated,
+  login,
+  logout,
+  uploadFoodImage,
+} from './api'
 
 type AppScreen = 'home' | 'battle'
 
 function App() {
+  const [authenticated, setAuthenticated] = useState(isAuthenticated())
   const [screen, setScreen] = useState<AppScreen>('home')
   const [collection, setCollection] = useState<Pokefood[]>([])
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [opponentPokefood, setOpponentPokefood] = useState<Pokefood | null>(null)
+  const showDevLogin = import.meta.env.DEV
 
   const userId = 'demo-user-123'
 
   useEffect(() => {
+    if (!authenticated) {
+      setCollection([])
+      return
+    }
+
     const loadCollection = async () => {
       try {
         const fetched = await getUserCollection(userId)
@@ -25,7 +40,26 @@ function App() {
     }
 
     void loadCollection()
-  }, [])
+  }, [authenticated])
+
+  const handleLogin = async (email: string, password: string) => {
+    await login(email, password)
+    setAuthenticated(true)
+  }
+
+  const handleDevLogin = async (email: string) => {
+    await devLogin(email)
+    setAuthenticated(true)
+  }
+
+  const handleLogout = () => {
+    logout()
+    setAuthenticated(false)
+    setScreen('home')
+    setSelectedPokefood(null)
+    setOpponentPokefood(null)
+    setCollection([])
+  }
 
   const handleUploadStart = async (file: File) => {
     try {
@@ -64,9 +98,28 @@ function App() {
     setOpponentPokefood(null)
   }
 
+  if (!authenticated) {
+    return (
+      <LoginScreen
+        onLogin={handleLogin}
+        onDevLogin={handleDevLogin}
+        showDevLogin={showDevLogin}
+      />
+    )
+  }
+
   if (screen === 'battle' && selectedPokefood && opponentPokefood) {
     return (
       <main className="min-h-screen bg-[var(--color-surface)] px-4 py-6 text-[var(--color-on-surface)] md:px-8">
+        <div className="mx-auto mb-4 flex w-full max-w-6xl justify-end">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-lg border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-3 py-2 text-xs text-[var(--color-on-surface)] transition hover:border-[var(--color-primary)] md:text-sm"
+          >
+            Log out
+          </button>
+        </div>
         <BattleScreen
           playerPokefood={selectedPokefood}
           opponentPokefood={opponentPokefood}
@@ -78,6 +131,15 @@ function App() {
 
   return (
     <main className="min-h-screen bg-[var(--color-surface)] px-4 py-6 text-[var(--color-on-surface)] md:px-8">
+      <div className="mx-auto mb-4 flex w-full max-w-7xl justify-end">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="rounded-lg border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-3 py-2 text-xs text-[var(--color-on-surface)] transition hover:border-[var(--color-primary)] md:text-sm"
+        >
+          Log out
+        </button>
+      </div>
       <HomeScreen
         pokefoodCollection={collection}
         onUploadStart={handleUploadStart}
