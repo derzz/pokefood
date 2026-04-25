@@ -6,7 +6,7 @@ import { PokefoodDetail } from '../components/PokefoodDetail'
 
 interface HomeScreenProps {
   pokefoodCollection: Pokefood[]
-  onUploadStart: (file: File) => void
+  onUploadStart: (file: File) => Promise<void>
   onNavigateToBattle?: (pokefood: Pokefood) => void
 }
 
@@ -18,11 +18,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     setIsUploading(true)
-    onUploadStart(file)
-    // Reset after simulated upload
-    setTimeout(() => setIsUploading(false), 2000)
+    try {
+      await onUploadStart(file)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (

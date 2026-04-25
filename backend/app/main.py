@@ -9,6 +9,23 @@ from app.api.pokefoods import router as pokefoods_router
 from app.db.session import init_db
 from app.ws.battle import router as battle_router
 
+LOG_LEVEL = os.getenv("APP_LOG_LEVEL", "INFO").upper()
+
+
+def configure_logging() -> None:
+    root_logger = logging.getLogger()
+
+    if not root_logger.handlers:
+        logging.basicConfig(
+            level=LOG_LEVEL,
+            format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        )
+
+    root_logger.setLevel(LOG_LEVEL)
+    logging.getLogger("app").setLevel(LOG_LEVEL)
+
+
+configure_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="PokeFood Backend", version="0.1.0")
@@ -28,6 +45,7 @@ init_db()
 @app.on_event("startup")
 def on_startup() -> None:
     init_db()
+    logger.info("backend startup complete", extra={"log_level": LOG_LEVEL})
 
 
 app.include_router(auth_router)

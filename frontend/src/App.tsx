@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Pokefood } from './types'
 import { HomeScreen } from './screens/HomeScreen'
 import { BattleScreen } from './screens/BattleScreen'
+import { getUserCollection, uploadFoodImage } from './api'
 
 type AppScreen = 'home' | 'battle'
 
@@ -11,35 +12,24 @@ function App() {
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [opponentPokefood, setOpponentPokefood] = useState<Pokefood | null>(null)
 
-  // Simulated user ID - replace with actual auth
   const userId = 'demo-user-123'
+
+  useEffect(() => {
+    const loadCollection = async () => {
+      try {
+        const fetched = await getUserCollection(userId)
+        setCollection(fetched)
+      } catch (error) {
+        console.error('Failed to load collection:', error)
+      }
+    }
+
+    void loadCollection()
+  }, [])
 
   const handleUploadStart = async (file: File) => {
     try {
-      // For now, simulate the upload. Replace with actual API call:
-      // const newPokefood = await uploadFoodImage(file)
-      
-      // Simulated response
-      const newPokefood: Pokefood = {
-        id: Date.now().toString(),
-        name: 'New Pokefood',
-        imageUrl: URL.createObjectURL(file),
-        type: 'Fruit',
-        variant: 'Normal',
-        rarity: 'Common',
-        hp: 45,
-        atk: 49,
-        mp: 45,
-        moves: [],
-        nutritionInfo: {
-          calories: 100,
-          fat: 0.3,
-          protein: 1,
-          carbs: 25,
-        },
-        createdAt: new Date(),
-        uploadedBy: userId,
-      }
+      const newPokefood = await uploadFoodImage(file)
 
       setCollection((prev) => [...prev, newPokefood])
     } catch (error) {
