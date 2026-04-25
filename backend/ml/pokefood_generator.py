@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import random
 import re
+from base64 import b64encode
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
+from pydantic import ValidationError
+
 from models.pokefood import Move, Pokefood
+
+logger = logging.getLogger(__name__)
 
 PokefoodType = Literal["fruveg", "meat", "grain"]
 _MOVES_JSON_PATH = Path(__file__).with_name("moves.json")
@@ -178,7 +184,7 @@ def pokefood_generator(
     labels: Sequence[Any],
     food_name: str,
     name: str,
-    image_url: str | None = None,
+    image_base64: bytes,
 ) -> Pokefood:
     normalized_labels = _normalize_labels(labels)
     if not normalized_labels:
@@ -187,14 +193,30 @@ def pokefood_generator(
     pokefood_type = _infer_type(labels=normalized_labels, food_name=food_name, name=name)
     hp = _derive_hp(labels=normalized_labels, food_name=food_name, name=name)
     moves = _build_moves(normalized_labels)
-    resolved_image_url: Any = image_url or f"https://example.com/pokefood/{_slugify(name or food_name)}.jpg"
 
-    return Pokefood(
-        personal_name=food_name,
-        name=name,
-        image_url=resolved_image_url,
-        labels=normalized_labels,
-        hp=hp,
-        type=pokefood_type,
-        moves=moves,
-    )
+    try:
+        return Pokefood(
+            personal_name=food_name,
+            name=name,
+            image_base64=b64encode(image_base64).decode("ascii"),
+            labels=normalized_labels,
+            hp=hp,
+            type=pokefood_type,
+            moves=moves,
+        )
+    except ValidationError as exc:
+        logger.error(
+            "Pokefood construction failed: errors=%s | "
+            "personal_name=%r name=%r image_base64_type=%s image_base64_len=%s "
+            "labels=%r hp=%r type=%r moves=%r",
+            exc.errors(),
+            food_name,
+            name,
+            type(image_base64).__name__,
+            (len(image_base64) if hasattr(image_base64, "__len__") else "n/a"),
+            normalized_labels,
+            hp,
+            pokefood_type,
+            [m.model_dump() for m in moves],
+        )
+        raise

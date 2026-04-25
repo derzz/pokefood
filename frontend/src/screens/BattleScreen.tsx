@@ -103,7 +103,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const isPlayerTurn = roomState?.turn_player_id === matchSession.playerId
   const isFinished = roomState?.status === 'finished' || winnerId !== null
   const wsUrl = useMemo(() => buildBattleWebSocketUrl(matchSession), [matchSession])
-  const joinPayload = useMemo(() => buildJoinPayload(playerPokefood), [playerPokefood])
+  const joinPayload = useRef(() => buildJoinPayload(playerPokefood))
+
+  useEffect(() => {
+    joinPayload.current = () => buildJoinPayload(playerPokefood)
+  }, [playerPokefood])
 
   const triggerAttackAnimation = useCallback((attacker: 'player' | 'opponent') => {
     if (animationTimerRef.current !== null) {
@@ -135,7 +139,6 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     }
 
     const connect = () => {
-      clearReconnectTimer()
       const websocket = new WebSocket(wsUrl)
       websocketRef.current = websocket
 
@@ -144,10 +147,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           websocket.close()
           return
         }
-        reconnectAttemptsRef.current = 0
         setIsConnected(true)
         setBattleLog((prev) => [...prev, 'Match found. Sending your Pokefood...'])
-        websocket.send(JSON.stringify({ type: 'join', payload: joinPayload }))
+        websocket.send(JSON.stringify({ type: 'join', payload: joinPayload.current() }))
         websocket.send(JSON.stringify({ type: 'ready', payload: {} }))
       }
 
@@ -155,7 +157,18 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         if (isDisposed || websocketRef.current !== websocket) {
           return
         }
+
         const incoming = JSON.parse(messageEvent.data) as WsEvent
+
+        if (incoming.type === 'error') {
+          const payload = incoming.payload as { message?: string }
+          const message = payload.message || 'Battle connection error'
+          setErrorMessage(message)
+          console.error(message)
+          setBattleLog((prev) => [...prev, message])
+          return
+        }
+
         if (incoming.type === 'state_update') {
           setRoomState(incoming.payload as BattleRoomSnapshot)
           return
@@ -178,13 +191,6 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           setWinnerId(result.winner_id)
           setBattleLog((prev) => [...prev, result.winner_id === matchSession.playerId ? 'Victory!' : 'Defeat!'])
           return
-        }
-
-        if (incoming.type === 'error') {
-          const payload = incoming.payload as { message?: string }
-          const message = payload.message || 'Battle connection error'
-          setErrorMessage(message)
-          setBattleLog((prev) => [...prev, message])
         }
       }
 
@@ -230,7 +236,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       }
       websocketRef.current = null
     }
-  }, [joinPayload, matchSession.playerId, triggerAttackAnimation, wsUrl])
+  }, [matchSession.playerId, triggerAttackAnimation, wsUrl])
 
   const handleMoveSelect = (move: Move) => {
     const websocket = websocketRef.current

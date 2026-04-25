@@ -1,34 +1,42 @@
 import hashlib
+import logging
 from typing import Any, Dict, Optional, Tuple
 
 import httpx
 
+from ml.main import generate_pokefood_and_icon
 from models import Move, Pokefood
 
+logger = logging.getLogger(__name__)
 
 class CVService:
-    def __init__(self, cv_service_url: Optional[str] = None, timeout_seconds: float = 5.0) -> None:
-        self.cv_service_url = cv_service_url
-        self.timeout_seconds = timeout_seconds
 
-    async def get_pokefood(self, image_base64: str) -> Tuple[Pokefood, float]:
-        if self.cv_service_url:
-            return await self._get_from_http(image_base64=image_base64)
+    async def get_pokefood(self, image_base64: str) -> Pokefood:
+        if True:
+            logger.info("Fetching Pokefood")
+            return await self._get_from_ml(image_base64=image_base64)
+        logger.info("Mocking Pokefood")
         return self._get_mock_pokefood(image_base64=image_base64)
 
-    async def _get_from_http(self, image_base64: str) -> Tuple[Pokefood, float]:
-        payload = {"image_base64": image_base64}
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(f"{self.cv_service_url.rstrip('/')}/getMonster", json=payload)
-            response.raise_for_status()
-            body: Dict[str, Any] = response.json()
+    async def _get_from_ml(self, image_base64: str) -> Pokefood:
+        logger.info("CV pipeline starting (input_len=%d)", len(image_base64))
+        try:
+            pokefood_data = await generate_pokefood_and_icon(base64_image=image_base64)
+        except Exception as exc:
+            logger.exception("CV pipeline failed: %s", exc)
+            raise
+        logger.info(
+            "CV pipeline succeeded: name=%r type=%r labels=%r moves=%d image_bytes=%d",
+            pokefood_data.name,
+            pokefood_data.type,
+            pokefood_data.labels,
+            len(pokefood_data.moves),
+            len(pokefood_data.image_base64) if pokefood_data.image_base64 else 0,
+        )
+        return pokefood_data
 
-        pokefood_data = body.get("pokefood", body.get("monster", body))
-        confidence = float(body.get("source_confidence", body.get("confidence", 1.0)))
-        pokefood = Pokefood.model_validate(pokefood_data)
-        return pokefood, confidence
-
-    def _get_mock_pokefood(self, image_base64: str) -> Tuple[Pokefood, float]:
+    def _get_mock_pokefood(self, image_base64: str) -> Pokefood:
+        logger.info("Get mock pokefood")
         seed = int(hashlib.md5(image_base64.encode("utf-8")).hexdigest()[:8], 16)
 
         food_names = ["burger", "sushi", "broccoli", "tofu"]
@@ -57,4 +65,4 @@ class CVService:
             type=pokefood_type,
             moves=moves,
         )
-        return pokefood, 0.5
+        return pokefood

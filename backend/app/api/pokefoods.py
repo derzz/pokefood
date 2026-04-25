@@ -2,6 +2,7 @@ import json
 import os
 import logging
 
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,11 +15,14 @@ from models.image_input import PokefoodFromImageRequest, PokefoodFromImageRespon
 from models.pokefood import Move, Pokefood
 from models.stored_pokefood import StoredPokefoodResponse
 
+import base64
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, field_validator
+
 router = APIRouter(prefix="/api/v1/pokefoods", tags=["pokefoods"])
 logger = logging.getLogger(__name__)
 
-_cv_service = CVService(cv_service_url=os.getenv("CV_SERVICE_URL"))
-
+_cv_service = CVService()
 
 def get_cv_service() -> CVService:
     return _cv_service
@@ -52,7 +56,11 @@ async def create_pokefood_from_image(
         "pokefoods.from_image called",
         extra={"user_id": current_user.id},
     )
-    pokefood, confidence = await cv_service.get_pokefood(image_base64=request.image_base64)
+    try:
+        pokefood = await cv_service.get_pokefood(image_base64=request.image_base64)
+    except Exception:
+        logger.exception("create_pokefood_from_image: cv_service.get_pokefood failed")
+        raise
 
     record = StoredPokefood(
         user_id=current_user.id,
@@ -70,7 +78,6 @@ async def create_pokefood_from_image(
 
     return PokefoodFromImageResponse(
         pokefood=pokefood,
-        source_confidence=confidence,
         stored_pokefood_id=record.id,
     )
 
