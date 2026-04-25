@@ -68,4 +68,6 @@ class CategoryLabel(BaseModel):
 
 
 class FoodLabelResult(BaseModel):
+    name: str = Field(description="The name of the food item")
+    description: str = Field(description="A brief description of the food item")
     labels: list[CategoryLabel] = Field(description="One entry per category in the schema")
