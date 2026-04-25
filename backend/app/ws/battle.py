@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
@@ -7,15 +9,21 @@ from models import Pokefood
 
 router = APIRouter(tags=["battle"])
 room_manager = RoomManager()
+logger = logging.getLogger(__name__)
 
 
 @router.websocket("/ws/battle/{room_id}")
 async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = Query(...)) -> None:
+    logger.info("battle.websocket connect", extra={"room_id": room_id, "player_id": player_id})
     await websocket.accept()
 
     try:
         await room_manager.connect(room_id=room_id, player_id=player_id, websocket=websocket)
     except RoomError as exc:
+        logger.info(
+            "battle.websocket rejected",
+            extra={"room_id": room_id, "player_id": player_id, "error": str(exc)},
+        )
         await websocket.send_json({"type": "error", "payload": {"message": str(exc)}})
         await websocket.close(code=4400)
         return
@@ -40,6 +48,7 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             event = WsEvent.model_validate(await websocket.receive_json())
             await _handle_event(room_id=room_id, player_id=player_id, event=event)
     except WebSocketDisconnect:
+        logger.info("battle.websocket disconnect", extra={"room_id": room_id, "player_id": player_id})
         await room_manager.disconnect(room_id=room_id, player_id=player_id)
         await room_manager.broadcast(
             room_id,
@@ -49,10 +58,18 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             },
         )
     except RoomError as exc:
+        logger.info(
+            "battle.websocket room_error",
+            extra={"room_id": room_id, "player_id": player_id, "error": str(exc)},
+        )
         await websocket.send_json({"type": "error", "payload": {"message": str(exc)}})
 
 
 async def _handle_event(room_id: str, player_id: str, event: WsEvent) -> None:
+    logger.info(
+        "battle.websocket event",
+        extra={"room_id": room_id, "player_id": player_id, "event_type": event.type},
+    )
     if event.type == "join":
         payload = event.payload.get("pokefood", event.payload.get("monster", {}))
         pokefood = _parse_join_pokefood(payload)

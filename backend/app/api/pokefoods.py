@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -14,6 +15,7 @@ from models.pokefood import Move, Pokefood
 from models.stored_pokefood import StoredPokefoodResponse
 
 router = APIRouter(prefix="/api/v1/pokefoods", tags=["pokefoods"])
+logger = logging.getLogger(__name__)
 
 _cv_service = CVService(cv_service_url=os.getenv("CV_SERVICE_URL"))
 
@@ -46,6 +48,10 @@ async def create_pokefood_from_image(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PokefoodFromImageResponse:
+    logger.info(
+        "pokefoods.from_image called",
+        extra={"user_id": current_user.id},
+    )
     pokefood, confidence = await cv_service.get_pokefood(image_base64=request.image_base64)
 
     record = StoredPokefood(
@@ -74,6 +80,7 @@ async def list_my_pokefoods(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[StoredPokefoodResponse]:
+    logger.info("pokefoods.list called", extra={"user_id": current_user.id})
     rows = db.scalars(
         select(StoredPokefood)
         .where(StoredPokefood.user_id == current_user.id)
@@ -88,6 +95,7 @@ async def get_all_my_pokefoods(
     db: Session = Depends(get_db),
 ) -> list[StoredPokefoodResponse]:
     # Alias kept for clients that expect a named getAll-style endpoint.
+    logger.info("pokefoods.all called", extra={"user_id": current_user.id})
     return await list_my_pokefoods(current_user=current_user, db=db)
 
 
@@ -97,6 +105,10 @@ async def get_my_pokefood(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> StoredPokefoodResponse:
+    logger.info(
+        "pokefoods.get_one called",
+        extra={"user_id": current_user.id, "pokefood_id": pokefood_id},
+    )
     row = db.get(StoredPokefood, pokefood_id)
     if row is None or row.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pokefood not found")

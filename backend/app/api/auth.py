@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,10 +10,12 @@ from app.db.session import get_db
 from models.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> UserResponse:
+    logger.info("auth.register called", extra={"email": payload.email})
     existing = db.scalar(select(User).where(User.email == payload.email))
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
@@ -25,6 +29,7 @@ async def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> U
 
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    logger.info("auth.login called", extra={"email": payload.email})
     user = db.scalar(select(User).where(User.email == payload.email))
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")

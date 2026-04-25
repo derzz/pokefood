@@ -5,7 +5,7 @@ import type { Pokefood, Move, FoodType, UploadRequest } from './types'
  * TODO: Replace with actual backend endpoints
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL = 'http://localhost:8000'
 
 /**
  * Convert File to base64 string
