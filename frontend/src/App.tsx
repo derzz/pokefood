@@ -8,7 +8,6 @@ import {
   devLogin,
   getCurrentUserId,
   getUserCollection,
-  isAuthenticated,
   login,
   logout,
   uploadFoodImage,
@@ -17,7 +16,7 @@ import {
 type AppScreen = 'home' | 'battle'
 
 function App() {
-  const [authenticated, setAuthenticated] = useState(isAuthenticated())
+  const [authenticated, setAuthenticated] = useState(false)
   const [screen, setScreen] = useState<AppScreen>('home')
   const [collection, setCollection] = useState<Pokefood[]>([])
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
