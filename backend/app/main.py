@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.battles import router as battles_router
 from app.api.pokefoods import router as pokefoods_router
 from app.db.session import init_db
 from app.ws.battle import router as battle_router
@@ -49,6 +50,7 @@ def on_startup() -> None:
 
 
 app.include_router(auth_router)
+app.include_router(battles_router)
 app.include_router(pokefoods_router)
 app.include_router(battle_router)
 

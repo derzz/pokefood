@@ -1,14 +1,15 @@
 import logging
+import asyncio
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from app.core.room_manager import RoomError, RoomManager
+from app.core.battle_runtime import room_manager
+from app.core.room_manager import RoomError
 from models.battle import WsEvent
 from models import Pokefood
 
 router = APIRouter(tags=["battle"])
-room_manager = RoomManager()
 logger = logging.getLogger(__name__)
 
 
@@ -38,9 +39,22 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             },
         },
     )
+    snapshot = await room_manager.snapshot(room_id)
+    if len(snapshot.players) == 2:
+        opponent_id = next((pid for pid in snapshot.players if pid != player_id), None)
+        await websocket.send_json(
+            {
+                "type": "matched",
+                "payload": {
+                    "room_id": room_id,
+                    "player_id": player_id,
+                    "opponent_id": opponent_id,
+                },
+            }
+        )
     await room_manager.broadcast(
         room_id,
-        {"type": "state_update", "payload": (await room_manager.snapshot(room_id)).model_dump(mode="json")},
+        {"type": "state_update", "payload": snapshot.model_dump(mode="json")},
     )
 
     try:
@@ -102,6 +116,18 @@ async def _handle_event(room_id: str, player_id: str, event: WsEvent) -> None:
 
         if result.get("winner_id"):
             await room_manager.broadcast(room_id, {"type": "battle_end", "payload": result})
+            return
+
+        bot_result = await room_manager.perform_bot_turn(room_id=room_id)
+        if bot_result is not None:
+            await asyncio.sleep(0.35)
+            await room_manager.broadcast(room_id, {"type": "action_result", "payload": bot_result})
+            await room_manager.broadcast(
+                room_id,
+                {"type": "state_update", "payload": (await room_manager.snapshot(room_id)).model_dump(mode="json")},
+            )
+            if bot_result.get("winner_id"):
+                await room_manager.broadcast(room_id, {"type": "battle_end", "payload": bot_result})
         return
 
     if event.type == "ping":

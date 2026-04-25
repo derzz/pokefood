@@ -41,3 +41,44 @@ export interface UploadRequest {
   filename: string
   mimeType: string
 }
+
+export interface BattleMatchSession {
+  roomId: string
+  playerId: string
+  opponentId: string
+}
+
+export interface BattlePlayerSnapshot {
+  player_id: string
+  ready: boolean
+  current_hp: number | null
+  pokefood: {
+    personal_name: string
+    name: string
+    image_base64: string
+    labels: string[]
+    hp: number
+    type: 'fruveg' | 'meat' | 'grain'
+    moves: Array<{
+      name: string
+      damage: number
+    }>
+  } | null
+}
+
+export interface BattleRoomSnapshot {
+  room_id: string
+  status: 'waiting' | 'in_progress' | 'finished'
+  turn_player_id: string | null
+  players: Record<string, BattlePlayerSnapshot>
+}
+
+export interface BattleActionResult {
+  attacker_id: string
+  defender_id: string
+  move: string
+  type_multiplier: number
+  damage: number
+  winner_id: string | null
+}
+

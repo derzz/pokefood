@@ -1,4 +1,4 @@
-import type { Pokefood, Move } from './types'
+import type { BattleMatchSession, Move, Pokefood } from './types'
 
 /**
  * API client for Pokefood backend communication
@@ -38,6 +38,10 @@ type BackendStoredPokefood = {
 
 function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+export function getCurrentUserId(): string {
+  return localStorage.getItem(USER_ID_KEY) || 'current-user'
 }
 
 type BackendLoginResponse = {
@@ -97,6 +101,40 @@ export function logout(): void {
 
 export function isAuthenticated(): boolean {
   return Boolean(getAccessToken())
+}
+
+type BackendMatchmakeResponse = {
+  room_id: string
+  player_id: string
+  opponent_id: string
+  mode: 'mock'
+}
+
+export async function createBattleMatch(): Promise<BattleMatchSession> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/battles/matchmake`, {
+    method: 'POST',
+    headers: {
+      ...buildAuthHeaders(),
+    },
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(errorBody || 'Failed to create battle match')
+  }
+
+  const payload = (await response.json()) as BackendMatchmakeResponse
+  return {
+    roomId: payload.room_id,
+    playerId: payload.player_id,
+    opponentId: payload.opponent_id,
+  }
+}
+
+export function buildBattleWebSocketUrl(match: BattleMatchSession): string {
+  const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws')
+  const query = new URLSearchParams({ player_id: match.playerId })
+  return `${wsBaseUrl}/ws/battle/${match.roomId}?${query.toString()}`
 }
 
 function buildAuthHeaders(): HeadersInit {
@@ -206,7 +244,7 @@ export async function uploadFoodImage(file: File): Promise<Pokefood> {
   }
 
   const payload = (await response.json()) as BackendCreateResponse
-  const userId = localStorage.getItem(USER_ID_KEY) || 'current-user'
+  const userId = getCurrentUserId()
 
   return mapBackendPokefoodToFrontend(
     payload.pokefood,

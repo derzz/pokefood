@@ -1,121 +1,174 @@
-import React, { useState } from 'react'
-import type { Pokefood, Move } from '../types'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { buildBattleWebSocketUrl } from '../api'
+import type {
+  BattleActionResult,
+  BattleMatchSession,
+  BattleRoomSnapshot,
+  Move,
+  Pokefood,
+} from '../types'
 import { StatBar } from '../components/StatBar'
 import { MoveButton } from '../components/MoveButton'
 import { RarityBadge } from '../components/RarityBadge'
 
 interface BattleScreenProps {
   playerPokefood: Pokefood
-  opponentPokefood: Pokefood
+  matchSession: BattleMatchSession
   onExit: () => void
 }
 
-interface BattleState {
-  playerHp: number
-  opponentHp: number
-  playerMp: number
-  opponentMp: number
-  currentTurn: 'player' | 'opponent'
-  battleLog: string[]
-  isFinished: boolean
-  winner: 'player' | 'opponent' | null
+type WsEvent = {
+  type: string
+  payload: unknown
+}
+
+function mapFrontendTypeToBackend(type: Pokefood['type']): 'fruveg' | 'meat' | 'grain' {
+  if (type === 'Grain') return 'grain'
+  if (type === 'Meat') return 'meat'
+  return 'fruveg'
+}
+
+function toRawBase64(imageUrl: string): string {
+  const parts = imageUrl.split(',')
+  return parts.length > 1 ? parts[1] : imageUrl
+}
+
+function toDataUrl(base64: string): string {
+  if (base64.startsWith('data:image')) {
+    return base64
+  }
+  return `data:image/png;base64,${base64}`
+}
+
+function buildJoinPayload(pokefood: Pokefood): Record<string, unknown> {
+  return {
+    pokefood: {
+      personal_name: pokefood.name,
+      name: pokefood.name,
+      image_base64: toRawBase64(pokefood.imageUrl),
+      labels: ['battle'],
+      hp: pokefood.hp,
+      type: mapFrontendTypeToBackend(pokefood.type),
+      moves: pokefood.moves.map((move) => ({
+        name: move.name,
+        damage: move.power,
+      })),
+    },
+  }
 }
 
 export const BattleScreen: React.FC<BattleScreenProps> = ({
   playerPokefood,
-  opponentPokefood,
+  matchSession,
   onExit,
 }) => {
-  const [battleState, setBattleState] = useState<BattleState>({
-    playerHp: playerPokefood.hp,
-    opponentHp: opponentPokefood.hp,
-    playerMp: playerPokefood.mp,
-    opponentMp: opponentPokefood.mp,
-    currentTurn: 'player',
-    battleLog: ['Battle started!'],
-    isFinished: false,
-    winner: null,
-  })
+  const [roomState, setRoomState] = useState<BattleRoomSnapshot | null>(null)
+  const [battleLog, setBattleLog] = useState<string[]>(['Connecting to battle server...'])
+  const [playerMp, setPlayerMp] = useState(playerPokefood.mp)
+  const [winnerId, setWinnerId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const websocketRef = useRef<WebSocket | null>(null)
+
+  const playerSnapshot = roomState?.players[matchSession.playerId] || null
+  const opponentSnapshot = useMemo(() => {
+    if (!roomState) {
+      return null
+    }
+    return roomState.players[matchSession.opponentId] || null
+  }, [roomState, matchSession.opponentId])
+
+  const playerHp = playerSnapshot?.current_hp ?? playerPokefood.hp
+  const opponentHp = opponentSnapshot?.current_hp ?? opponentSnapshot?.pokefood?.hp ?? 0
+  const isPlayerTurn = roomState?.turn_player_id === matchSession.playerId
+  const isFinished = roomState?.status === 'finished' || winnerId !== null
+
+  useEffect(() => {
+    setBattleLog(['Connecting to battle server...'])
+    setErrorMessage(null)
+    setWinnerId(null)
+    setIsConnected(false)
+    setPlayerMp(playerPokefood.mp)
+
+    const websocket = new WebSocket(buildBattleWebSocketUrl(matchSession))
+    websocketRef.current = websocket
+
+    websocket.onopen = () => {
+      setIsConnected(true)
+      setBattleLog((prev) => [...prev, 'Match found. Sending your Pokefood...'])
+      websocket.send(JSON.stringify({ type: 'join', payload: buildJoinPayload(playerPokefood) }))
+      websocket.send(JSON.stringify({ type: 'ready', payload: {} }))
+    }
+
+    websocket.onmessage = (messageEvent) => {
+      const incoming = JSON.parse(messageEvent.data) as WsEvent
+      if (incoming.type === 'state_update') {
+        setRoomState(incoming.payload as BattleRoomSnapshot)
+        return
+      }
+
+      if (incoming.type === 'action_result') {
+        const result = incoming.payload as BattleActionResult
+        setBattleLog((prev) => [
+          ...prev,
+          `${result.attacker_id} used ${result.move}!`,
+          `${result.defender_id} took ${result.damage} damage.`,
+        ])
+        return
+      }
+
+      if (incoming.type === 'battle_end') {
+        const result = incoming.payload as BattleActionResult
+        setWinnerId(result.winner_id)
+        setBattleLog((prev) => [...prev, result.winner_id === matchSession.playerId ? 'Victory!' : 'Defeat!'])
+        return
+      }
+
+      if (incoming.type === 'error') {
+        const payload = incoming.payload as { message?: string }
+        const message = payload.message || 'Battle connection error'
+        setErrorMessage(message)
+        setBattleLog((prev) => [...prev, message])
+      }
+    }
+
+    websocket.onclose = () => {
+      setIsConnected(false)
+    }
+
+    return () => {
+      websocket.close()
+      websocketRef.current = null
+    }
+  }, [matchSession, playerPokefood])
 
   const handleMoveSelect = (move: Move) => {
-    if (battleState.isFinished || battleState.currentTurn !== 'player') return
-    if (battleState.playerMp < move.mpCost) {
-      setBattleState((prev) => ({
-        ...prev,
-        battleLog: [...prev.battleLog, 'Not enough MP!'],
-      }))
+    const websocket = websocketRef.current
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+      setBattleLog((prev) => [...prev, 'Connection is not ready yet.'])
+      return
+    }
+    if (isFinished || !isPlayerTurn) return
+    if (playerMp < move.mpCost) {
+      setBattleLog((prev) => [...prev, 'Not enough MP!'])
       return
     }
 
-    // Simplified battle logic
-    const damage = Math.floor(playerPokefood.atk * (move.power / 100))
-    const newOpponentHp = Math.max(0, battleState.opponentHp - damage)
-    const newPlayerMp = Math.max(0, battleState.playerMp - move.mpCost)
-
-    const newLog = [
-      ...battleState.battleLog,
-      `${playerPokefood.name} used ${move.name}!`,
-      `${opponentPokefood.name} took ${damage} damage!`,
-    ]
-
-    if (newOpponentHp <= 0) {
-      setBattleState({
-        playerHp: battleState.playerHp,
-        opponentHp: 0,
-        playerMp: newPlayerMp,
-        opponentMp: battleState.opponentMp,
-        currentTurn: 'player',
-        battleLog: [...newLog, 'Victory!'],
-        isFinished: true,
-        winner: 'player',
-      })
-      return
-    }
-
-    // Opponent's turn
-    setTimeout(() => {
-      const opponentMove =
-        opponentPokefood.moves[
-          Math.floor(Math.random() * opponentPokefood.moves.length)
-        ]
-      if (!opponentMove) return
-
-      const opponentDamage = Math.floor(
-        opponentPokefood.atk * (opponentMove.power / 100)
-      )
-      const newPlayerHp = Math.max(0, battleState.playerHp - opponentDamage)
-
-      const finalLog = [
-        ...newLog,
-        `${opponentPokefood.name} used ${opponentMove.name}!`,
-        `${playerPokefood.name} took ${opponentDamage} damage!`,
-      ]
-
-      if (newPlayerHp <= 0) {
-        setBattleState({
-          playerHp: 0,
-          opponentHp: newOpponentHp,
-          playerMp: newPlayerMp,
-          opponentMp: battleState.opponentMp,
-          currentTurn: 'opponent',
-          battleLog: [...finalLog, 'Defeat!'],
-          isFinished: true,
-          winner: 'opponent',
-        })
-      } else {
-        setBattleState({
-          playerHp: newPlayerHp,
-          opponentHp: newOpponentHp,
-          playerMp: newPlayerMp,
-          opponentMp: battleState.opponentMp,
-          currentTurn: 'player',
-          battleLog: finalLog,
-          isFinished: false,
-          winner: null,
-        })
-      }
-    }, 1000)
+    websocket.send(JSON.stringify({ type: 'action', payload: { move: move.name } }))
+    setPlayerMp((prev) => Math.max(0, prev - move.mpCost))
   }
+
+  const opponentName = opponentSnapshot?.pokefood?.personal_name || 'Waiting for opponent...'
+  const opponentImage = opponentSnapshot?.pokefood
+    ? toDataUrl(opponentSnapshot.pokefood.image_base64)
+    : null
+
+  const victoryLabel =
+    winnerId === null
+      ? 'Battle finished'
+      : winnerId === matchSession.playerId
+        ? 'You Won!'
+        : 'You Lost!'
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4">
@@ -127,20 +180,26 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         {/* Opponent */}
         <div className="grid place-items-center gap-3 text-center">
           <div className="space-y-2">
-            <h3 className="text-sm text-[var(--color-on-surface)] md:text-base">{opponentPokefood.name}</h3>
-            <RarityBadge rarity={opponentPokefood.rarity} />
+            <h3 className="text-sm text-[var(--color-on-surface)] md:text-base">{opponentName}</h3>
+            <RarityBadge rarity="Common" />
           </div>
           <div className="h-40 w-40 overflow-hidden rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] md:h-48 md:w-48">
-            <img
-              src={opponentPokefood.pixelArtUrl || opponentPokefood.imageUrl}
-              alt={opponentPokefood.name}
-              className="h-full w-full object-cover"
-            />
+            {opponentImage ? (
+              <img
+                src={opponentImage}
+                alt={opponentName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="grid h-full w-full place-items-center text-xs text-[var(--color-on-surface-variant)]">
+                Matchmaking...
+              </div>
+            )}
           </div>
           <StatBar
             label="HP"
-            current={battleState.opponentHp}
-            max={opponentPokefood.hp}
+            current={opponentHp}
+            max={opponentSnapshot?.pokefood?.hp || 1}
             color="#FF6B6B"
             className="w-full max-w-xs"
           />
@@ -148,9 +207,10 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
         {/* Battle Log */}
         <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] p-3 md:p-4">
-          {battleState.battleLog.map((log, idx) => (
+          {battleLog.map((log, idx) => (
             <p key={idx} className="text-[10px] text-[var(--color-on-surface-variant)] md:text-xs">{log}</p>
           ))}
+          {errorMessage && <p className="text-[10px] text-red-400 md:text-xs">{errorMessage}</p>}
         </div>
 
         {/* Player */}
@@ -168,14 +228,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           </div>
           <StatBar
             label="HP"
-            current={battleState.playerHp}
+            current={playerHp}
             max={playerPokefood.hp}
             color="#FF6B6B"
             className="w-full max-w-xs"
           />
           <StatBar
             label="MP"
-            current={battleState.playerMp}
+            current={playerMp}
             max={playerPokefood.mp}
             color="#4169E1"
             className="w-full max-w-xs"
@@ -185,23 +245,21 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
       {/* Battle Controls */}
       <div className="rounded-2xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] p-4 md:p-6">
-        {!battleState.isFinished ? (
+        {!isFinished ? (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {playerPokefood.moves.map((move) => (
               <MoveButton
                 key={move.id}
                 move={move}
                 onSelect={handleMoveSelect}
-                disabled={battleState.playerMp < move.mpCost}
+                disabled={!isConnected || !isPlayerTurn || playerMp < move.mpCost}
               />
             ))}
           </div>
         ) : (
           <div className="space-y-4 text-center">
             <h2 className="text-2xl text-[var(--color-on-surface)] md:text-3xl">
-              {battleState.winner === 'player'
-                ? 'You Won!'
-                : 'You Lost!'}
+              {victoryLabel}
             </h2>
             <button className="rounded-xl bg-[var(--color-primary)] px-4 py-3 text-xs text-[var(--color-on-primary)] transition hover:brightness-110 md:text-sm" onClick={onExit}>Return to Collection</button>
           </div>

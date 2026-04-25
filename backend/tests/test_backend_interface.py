@@ -97,3 +97,54 @@ def test_websocket_battle_room_flow() -> None:
                     break
             assert saw_action_result
 
+
+def test_matchmake_with_mock_opponent_via_websocket() -> None:
+    headers = _auth_headers()
+    matchmake = client.post("/api/v1/battles/matchmake", headers=headers)
+    assert matchmake.status_code == 200
+
+    payload = matchmake.json()
+    room_id = payload["room_id"]
+    player_id = payload["player_id"]
+    opponent_id = payload["opponent_id"]
+    assert payload["mode"] == "mock"
+
+    with client.websocket_connect(f"/ws/battle/{room_id}?player_id={player_id}") as ws:
+        ws.send_json(
+            {
+                "type": "join",
+                "payload": {
+                    "pokefood": _pokefood(name="toast", personal_name="Toast Titan", hp=66, pokefood_type="grain")
+                },
+            }
+        )
+        ws.send_json({"type": "ready", "payload": {}})
+
+        got_opponent = False
+        got_in_progress = False
+        for _ in range(10):
+            msg = ws.receive_json()
+            if msg.get("type") != "state_update":
+                continue
+            state = msg.get("payload", {})
+            if opponent_id in state.get("players", {}) and state["players"][opponent_id].get("pokefood"):
+                got_opponent = True
+            if state.get("status") == "in_progress":
+                got_in_progress = True
+                break
+
+        assert got_opponent
+        assert got_in_progress
+
+        ws.send_json({"type": "action", "payload": {"move": "Chop"}})
+        saw_result = False
+        for _ in range(8):
+            msg = ws.receive_json()
+            if msg.get("type") == "action_result":
+                saw_result = True
+                assert msg["payload"]["damage"] >= 1
+                break
+
+        assert saw_result
+
+

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import random
+import uuid
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 
@@ -23,10 +25,11 @@ TYPE_ADVANTAGE = {
 
 @dataclass
 class PlayerState:
-    websocket: WebSocket
+    websocket: Optional[WebSocket] = None
     ready: bool = False
     pokefood: Optional[Pokefood] = None
     current_hp: Optional[int] = None
+    is_bot: bool = False
 
 
 @dataclass
@@ -45,8 +48,14 @@ class RoomManager:
     async def connect(self, room_id: str, player_id: str, websocket: WebSocket) -> None:
         async with self._lock:
             room = self.rooms.setdefault(room_id, RoomState(room_id=room_id))
-            if player_id in room.players:
-                raise RoomError("player_id already connected")
+
+            existing_player = room.players.get(player_id)
+            if existing_player:
+                if existing_player.websocket is not None:
+                    raise RoomError("player_id already connected")
+                existing_player.websocket = websocket
+                return
+
             if len(room.players) >= 2:
                 raise RoomError("room already has 2 players")
             room.players[player_id] = PlayerState(websocket=websocket)
@@ -57,10 +66,35 @@ class RoomManager:
             if not room:
                 return
             room.players.pop(player_id, None)
-            if not room.players:
+            if not room.players or all(player.is_bot for player in room.players.values()):
                 self.rooms.pop(room_id, None)
             elif room.status == "in_progress":
                 room.status = "finished"
+
+    async def create_mock_match(self, player_id: str) -> dict[str, str]:
+        async with self._lock:
+            room_id = f"room-{uuid.uuid4().hex[:12]}"
+            bot_id = f"mock-{uuid.uuid4().hex[:8]}"
+            bot_pokefood = self._generate_mock_pokefood()
+
+            self.rooms[room_id] = RoomState(
+                room_id=room_id,
+                players={
+                    player_id: PlayerState(),
+                    bot_id: PlayerState(
+                        ready=True,
+                        pokefood=bot_pokefood,
+                        current_hp=bot_pokefood.hp,
+                        is_bot=True,
+                    ),
+                },
+            )
+
+            return {
+                "room_id": room_id,
+                "player_id": player_id,
+                "opponent_id": bot_id,
+            }
 
     async def set_pokefood(self, room_id: str, player_id: str, pokefood: Pokefood) -> None:
         async with self._lock:
@@ -81,14 +115,34 @@ class RoomManager:
     async def attack(self, room_id: str, player_id: str, move_name: str) -> dict:
         async with self._lock:
             room = self._must_get_room(room_id)
+            return self._attack_locked(room=room, player_id=player_id, move_name=move_name)
+
+    async def perform_bot_turn(self, room_id: str) -> Optional[dict]:
+        async with self._lock:
+            room = self._must_get_room(room_id)
+            if room.status != "in_progress" or not room.turn_player_id:
+                return None
+
+            bot = room.players.get(room.turn_player_id)
+            if not bot or not bot.is_bot or not bot.pokefood:
+                return None
+
+            chosen_move = random.choice(bot.pokefood.moves)
+            return self._attack_locked(room=room, player_id=room.turn_player_id, move_name=chosen_move.name)
+
+    def _attack_locked(self, room: RoomState, player_id: str, move_name: str) -> dict:
             if room.status != "in_progress":
                 raise RoomError("battle not in progress")
             if room.turn_player_id != player_id:
                 raise RoomError("not your turn")
 
-            attacker = self._must_get_player(room_id, player_id)
+            attacker = room.players.get(player_id)
+            if attacker is None:
+                raise RoomError("player not found in room")
             defender_id = next(pid for pid in room.players if pid != player_id)
-            defender = self._must_get_player(room_id, defender_id)
+            defender = room.players.get(defender_id)
+            if defender is None:
+                raise RoomError("defender not found in room")
 
             if not attacker.pokefood or not defender.pokefood:
                 raise RoomError("both players must set pokefood first")
@@ -126,9 +180,50 @@ class RoomManager:
         room = self.rooms.get(room_id)
         if not room:
             return
-        websockets = [player.websocket for player in room.players.values()]
+        websockets = [player.websocket for player in room.players.values() if player.websocket is not None]
         for websocket in websockets:
             await websocket.send_json(message)
+
+    def _generate_mock_pokefood(self) -> Pokefood:
+        candidates = [
+            Pokefood(
+                personal_name="Byte Burger",
+                name="Burger",
+                image_base64="aGVsbG8=",
+                labels=["mock", "burger"],
+                hp=74,
+                type="meat",
+                moves=[
+                    {"name": "Grease Bash", "damage": 16},
+                    {"name": "Patty Press", "damage": 12},
+                ],
+            ),
+            Pokefood(
+                personal_name="Kernel Knight",
+                name="Corn",
+                image_base64="aGVsbG8=",
+                labels=["mock", "corn"],
+                hp=70,
+                type="grain",
+                moves=[
+                    {"name": "Cob Crush", "damage": 15},
+                    {"name": "Starch Shield", "damage": 10},
+                ],
+            ),
+            Pokefood(
+                personal_name="Leaf Lancer",
+                name="Salad",
+                image_base64="aGVsbG8=",
+                labels=["mock", "salad"],
+                hp=68,
+                type="fruveg",
+                moves=[
+                    {"name": "Vine Whip", "damage": 14},
+                    {"name": "Citrus Slice", "damage": 11},
+                ],
+            ),
+        ]
+        return random.choice(candidates)
 
     def _must_get_room(self, room_id: str) -> RoomState:
         room = self.rooms.get(room_id)

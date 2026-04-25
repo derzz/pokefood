@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { Pokefood } from './types'
+import type { BattleMatchSession, Pokefood } from './types'
 import { HomeScreen } from './screens/HomeScreen'
 import { BattleScreen } from './screens/BattleScreen'
 import { LoginScreen } from './screens/LoginScreen'
 import {
+  createBattleMatch,
   devLogin,
+  getCurrentUserId,
   getUserCollection,
   isAuthenticated,
   login,
@@ -19,10 +21,8 @@ function App() {
   const [screen, setScreen] = useState<AppScreen>('home')
   const [collection, setCollection] = useState<Pokefood[]>([])
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
-  const [opponentPokefood, setOpponentPokefood] = useState<Pokefood | null>(null)
+  const [battleSession, setBattleSession] = useState<BattleMatchSession | null>(null)
   const showDevLogin = import.meta.env.DEV
-
-  const userId = 'demo-user-123'
 
   useEffect(() => {
     if (!authenticated) {
@@ -32,6 +32,7 @@ function App() {
 
     const loadCollection = async () => {
       try {
+        const userId = getCurrentUserId()
         const fetched = await getUserCollection(userId)
         setCollection(fetched)
       } catch (error) {
@@ -57,7 +58,7 @@ function App() {
     setAuthenticated(false)
     setScreen('home')
     setSelectedPokefood(null)
-    setOpponentPokefood(null)
+    setBattleSession(null)
     setCollection([])
   }
 
@@ -73,19 +74,9 @@ function App() {
 
   const handleNavigateToBattle = async (pokefood: Pokefood) => {
     try {
+      const match = await createBattleMatch()
       setSelectedPokefood(pokefood)
-
-      // For now, pick a random opponent from collection
-      // Replace with actual API: const opponent = await getRandomOpponent()
-      const opponent =
-        collection.find((p) => p.id !== pokefood.id) || collection[0]
-
-      if (!opponent) {
-        alert('You need at least 2 Pokefood to battle!')
-        return
-      }
-
-      setOpponentPokefood(opponent)
+      setBattleSession(match)
       setScreen('battle')
     } catch (error) {
       console.error('Failed to start battle:', error)
@@ -95,7 +86,7 @@ function App() {
   const handleExitBattle = () => {
     setScreen('home')
     setSelectedPokefood(null)
-    setOpponentPokefood(null)
+    setBattleSession(null)
   }
 
   if (!authenticated) {
@@ -108,7 +99,7 @@ function App() {
     )
   }
 
-  if (screen === 'battle' && selectedPokefood && opponentPokefood) {
+  if (screen === 'battle' && selectedPokefood && battleSession) {
     return (
       <main className="min-h-screen bg-[var(--color-surface)] px-4 py-6 text-[var(--color-on-surface)] md:px-8">
         <div className="mx-auto mb-4 flex w-full max-w-6xl justify-end">
@@ -122,7 +113,7 @@ function App() {
         </div>
         <BattleScreen
           playerPokefood={selectedPokefood}
-          opponentPokefood={opponentPokefood}
+          matchSession={battleSession}
           onExit={handleExitBattle}
         />
       </main>
