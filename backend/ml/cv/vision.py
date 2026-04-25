@@ -75,16 +75,7 @@ async def crop_food_dish(image_bytes: bytes) -> bytes:
     for a in annotations:
         logger.info("detected: %s (score=%.3f)", a.get("name"), a.get("score"))
 
-    food_objects = [
-        a for a in annotations
-        if a.get("name", "").lower() in _FOOD_OBJECT_NAMES
-        and a.get("score", 0) >= 0.5
-    ]
-
-    if not food_objects:
-        raise FoodDishNotDetectedError("No food dish detected in image")
-
-    best = max(food_objects, key=lambda a: a["score"])
+    best = max(annotations, key=lambda a: a["score"])
     vertices = best["boundingPoly"]["normalizedVertices"]
 
     xs = [v.get("x", 0.0) for v in vertices]
