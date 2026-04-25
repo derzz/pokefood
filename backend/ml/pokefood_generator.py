@@ -8,15 +8,14 @@ import re
 from base64 import b64encode
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import ValidationError
 
+from ml.cv.model import FoodType
 from models.pokefood import Move, Pokefood
 
 logger = logging.getLogger(__name__)
-
-PokefoodType = Literal["fruveg", "meat", "grain"]
 _MOVES_JSON_PATH = Path(__file__).with_name("moves.json")
 
 
@@ -132,20 +131,6 @@ def _normalize_labels(labels: Sequence[Any]) -> list[str]:
     return normalized
 
 
-def _slugify(value: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-    return slug or "pokefood"
-
-
-def _infer_type(*, labels: Sequence[str], food_name: str, name: str) -> PokefoodType:
-    text = " ".join([food_name, name, *labels]).lower()
-    if any(keyword in text for keyword in ("fruit", "veg", "vegetable", "salad", "berry", "leaf", "plant")):
-        return "fruveg"
-    if any(keyword in text for keyword in ("meat", "beef", "pork", "chicken", "fish", "salmon", "tuna", "steak", "bacon")):
-        return "meat"
-    return "grain"
-
-
 def _derive_hp(*, labels: Sequence[str], food_name: str, name: str) -> int:
     seed = "|".join([food_name, name, *labels]).encode("utf-8")
     digest = hashlib.sha256(seed).hexdigest()
@@ -185,12 +170,12 @@ def pokefood_generator(
     food_name: str,
     name: str,
     image_base64: bytes,
+    food_type: FoodType,
 ) -> Pokefood:
     normalized_labels = _normalize_labels(labels)
     if not normalized_labels:
         normalized_labels = [food_name, name]
 
-    pokefood_type = _infer_type(labels=normalized_labels, food_name=food_name, name=name)
     hp = _derive_hp(labels=normalized_labels, food_name=food_name, name=name)
     moves = _build_moves(normalized_labels)
 
@@ -201,7 +186,7 @@ def pokefood_generator(
             image_base64=b64encode(image_base64).decode("ascii"),
             labels=normalized_labels,
             hp=hp,
-            type=pokefood_type,
+            type=food_type,
             moves=moves,
         )
     except ValidationError as exc:
@@ -216,7 +201,7 @@ def pokefood_generator(
             (len(image_base64) if hasattr(image_base64, "__len__") else "n/a"),
             normalized_labels,
             hp,
-            pokefood_type,
+            food_type,
             [m.model_dump() for m in moves],
         )
         raise
