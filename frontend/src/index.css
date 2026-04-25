@@ -29,55 +29,55 @@ body {
 /*
   TACKLE LOGIC
   ============
-  The arena is laid out vertically: opponent at top, player at bottom, battle
-  log in the middle.
+  The arena is laid out horizontally: player on the LEFT, opponent on the RIGHT,
+  battle log spanning the full width below the sprites.
 
   When the PLAYER attacks:
-    - Player sprite fires battle-lunge-up  → it translates upward and slightly
-      right, crossing the battle-log gap to visually collide with the opponent.
-    - Opponent sprite fires battle-recoil-up → it jolts upward/back and flashes
-      white, as if it absorbed the hit and was pushed away.
+    - Player sprite fires battle-lunge-right → it translates rightward, crossing
+      the gap to visually collide with the opponent.
+    - Opponent sprite fires battle-recoil-right → it jolts further right/back
+      and flashes white, as if it absorbed the hit and was pushed away.
 
   When the OPPONENT attacks:
-    - Opponent sprite fires battle-lunge-down → mirrors the above, diving downward
+    - Opponent sprite fires battle-lunge-left → mirrors the above, diving left
       toward the player.
-    - Player sprite fires battle-recoil-down → jolts down/back with a white flash.
+    - Player sprite fires battle-recoil-left → jolts left/back with a white flash.
 
-  The attacker peaks at ~40 % of the keyframe duration (~190 ms into a 480 ms
+  The attacker peaks at ~38 % of the keyframe duration (~185 ms into a 480 ms
   animation), which is when the sprites are visually closest.  The recoil on the
   target carries a 160 ms delay so it triggers right at that moment of contact.
   A radial clash-flash div appears between them at the same instant.
 */
 
-/* --- attacker lunges upward (player attacks) --- */
-@keyframes battle-lunge-up {
-  0%   { transform: translate3d(0,    0,   0) scale(1)    rotate(0deg); }
-  38%  { transform: translate3d(14px, -115px, 0) scale(1.22) rotate(12deg); }
-  62%  { transform: translate3d(16px, -122px, 0) scale(1.19) rotate(13deg); }
-  100% { transform: translate3d(0,    0,   0) scale(1)    rotate(0deg); }
+/* --- attacker lunges rightward (player attacks) --- */
+@keyframes battle-lunge-right {
+  0%   { transform: translate3d(0,    0,    0) scale(1)    rotate(0deg); }
+  38%  { transform: translate3d(105px, -12px, 0) scale(1.22) rotate(8deg); }
+  62%  { transform: translate3d(112px, -14px, 0) scale(1.19) rotate(9deg); }
+  100% { transform: translate3d(0,    0,    0) scale(1)    rotate(0deg); }
 }
 
-/* --- attacker lunges downward (opponent attacks) --- */
-@keyframes battle-lunge-down {
-  0%   { transform: translate3d(0,     0,    0) scale(1)    rotate(0deg); }
-  38%  { transform: translate3d(-14px, 115px, 0) scale(1.22) rotate(-12deg); }
-  62%  { transform: translate3d(-16px, 122px, 0) scale(1.19) rotate(-13deg); }
-  100% { transform: translate3d(0,     0,    0) scale(1)    rotate(0deg); }
+/* --- attacker lunges leftward (opponent attacks) --- */
+@keyframes battle-lunge-left {
+  0%   { transform: translate3d(0,      0,   0) scale(1)    rotate(0deg); }
+  38%  { transform: translate3d(-105px, 12px, 0) scale(1.22) rotate(-8deg); }
+  62%  { transform: translate3d(-112px, 14px, 0) scale(1.19) rotate(-9deg); }
+  100% { transform: translate3d(0,      0,   0) scale(1)    rotate(0deg); }
 }
 
-/* --- target recoil when hit from below (opponent is hit) --- */
-@keyframes battle-recoil-up {
+/* --- target recoil when hit from the left (opponent is hit) --- */
+@keyframes battle-recoil-right {
   0%   { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
-  30%  { transform: translate3d(-6px, -20px, 0) scale(0.91); filter: brightness(4); }
-  70%  { transform: translate3d(-3px, -8px,  0) scale(0.96); filter: brightness(1.2); }
+  30%  { transform: translate3d(18px, -6px, 0) scale(0.91); filter: brightness(4); }
+  70%  { transform: translate3d(7px,  -2px, 0) scale(0.96); filter: brightness(1.2); }
   100% { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
 }
 
-/* --- target recoil when hit from above (player is hit) --- */
-@keyframes battle-recoil-down {
+/* --- target recoil when hit from the right (player is hit) --- */
+@keyframes battle-recoil-left {
   0%   { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
-  30%  { transform: translate3d(6px, 20px, 0) scale(0.91); filter: brightness(4); }
-  70%  { transform: translate3d(3px, 8px,  0) scale(0.96); filter: brightness(1.2); }
+  30%  { transform: translate3d(-18px, 6px, 0) scale(0.91); filter: brightness(4); }
+  70%  { transform: translate3d(-7px,  2px, 0) scale(0.96); filter: brightness(1.2); }
   100% { transform: translate3d(0, 0, 0) scale(1);    filter: brightness(1); }
 }
 
@@ -105,31 +105,32 @@ body {
   will-change: transform;
 }
 
-.battle-sprite--lunge-up {
-  animation: battle-lunge-up 480ms cubic-bezier(0.12, 0.92, 0.22, 1) both;
+.battle-sprite--lunge-right {
+  animation: battle-lunge-right 480ms cubic-bezier(0.12, 0.92, 0.22, 1) both;
 }
 
-.battle-sprite--lunge-down {
-  animation: battle-lunge-down 480ms cubic-bezier(0.12, 0.92, 0.22, 1) both;
+.battle-sprite--lunge-left {
+  animation: battle-lunge-left 480ms cubic-bezier(0.12, 0.92, 0.22, 1) both;
 }
 
 /* recoil starts 160 ms after the attacker begins its lunge (≈ moment of contact) */
-.battle-sprite--recoil-up {
-  animation: battle-recoil-up 320ms ease-out 160ms both;
+.battle-sprite--recoil-right {
+  animation: battle-recoil-right 320ms ease-out 160ms both;
 }
 
-.battle-sprite--recoil-down {
-  animation: battle-recoil-down 320ms ease-out 160ms both;
+.battle-sprite--recoil-left {
+  animation: battle-recoil-left 320ms ease-out 160ms both;
 }
 
 .battle-arena--shaking {
   animation: battle-arena-shake 340ms ease-out;
 }
 
+/* Positioned at the horizontal midpoint between the two side-by-side sprites */
 .battle-clash-flash {
   pointer-events: none;
   position: absolute;
-  inset: 35% 30%;
+  inset: 15% 40%;
   z-index: 10;
   border-radius: 9999px;
   background: radial-gradient(
