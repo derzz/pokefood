@@ -50,10 +50,9 @@ export const PokefoodCard: React.FC<PokefoodCardProps> = ({
           )}
         </div>
         <RarityBadge rarity={pokefood.rarity} />
-        <div className="grid grid-cols-3 gap-2 rounded-lg bg-[var(--color-surface-container-high)] px-3 py-2 text-center text-[11px] text-[var(--color-on-surface-variant)] md:text-xs">
+        <div className="grid grid-cols-2 gap-2 rounded-lg bg-[var(--color-surface-container-high)] px-3 py-2 text-center text-[11px] text-[var(--color-on-surface-variant)] md:text-xs">
           <span>HP {pokefood.hp}</span>
           <span>ATK {pokefood.atk}</span>
-          <span>MP {pokefood.mp}</span>
         </div>
       </div>
     </div>
