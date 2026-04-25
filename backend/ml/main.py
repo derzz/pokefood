@@ -4,12 +4,6 @@ from typing import Literal
 
 app = FastAPI(title="FastAPI Starter", version="0.1.0")
 
-
-@app.get("/")
-def read_root() -> dict[str, str]:
-    return {"message": "FastAPI starter is running"}
-
-
 @app.get("/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
@@ -30,7 +24,12 @@ class Pokefood(BaseModel):
     moves: list[Move] = Field(default_factory=list, max_length=4)
 
 
-@app.post("/generate-moves", response_model=Pokefood)
-def pokefood_generation(food_name: String, name: String, labels: list[]) -> Pokefood:
-    
-    return pokefood
+@app.post("/generate-pokefood", response_model=Pokefood)
+def pokefood_generation(food_name: String, name: String, base64Image: String)-> Pokefood:
+
+    # Image detection over here and return labels
+
+    # Pokefood generation over here
+
+    ret = Pokefood(personal_name=food_name, name=name, image_url=base64Image)
+    return ret
