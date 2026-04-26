@@ -37,7 +37,7 @@ type BackendPokefood = {
   image_base64: string
   labels: string[]
   hp: number
-  type: 'fruveg' | 'meat' | 'grain'
+  type: 'fruits_vegetables' | 'meat' | 'grains' | 'fruveg' | 'grain'
   moves: BackendMove[]
 }
 
@@ -197,8 +197,8 @@ function buildAuthHeaders(): HeadersInit {
 
 function mapBackendType(type: BackendPokefood['type']): Pokefood['type'] {
   if (type === 'meat') return 'Meat'
-  if (type === 'grain') return 'Grain'
-  return 'Fruit/Vegetable'
+  if (type === 'grain' || type === 'grains') return 'Grain'
+  return 'Fruit'
 }
 
 function mapBackendMove(move: BackendMove, idx: number): Move {

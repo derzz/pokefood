@@ -58,7 +58,7 @@ export interface BattlePlayerSnapshot {
     image_base64: string
     labels: string[]
     hp: number
-    type: 'fruveg' | 'meat' | 'grain'
+    type: 'fruits_vegetables' | 'meat' | 'grains' | 'fruveg' | 'grain'
     moves: Array<{
       name: string
       damage: number

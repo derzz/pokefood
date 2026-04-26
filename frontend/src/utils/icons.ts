@@ -112,6 +112,8 @@ const TYPE_ICON_ALIASES: Record<string, TypeIconKey> = {
   grains: 'grains',
   fruveg: 'fruits_vegetables',
   fruit: 'fruits_vegetables',
+  fruit_vegetable: 'fruits_vegetables',
+  fruit_vegetables: 'fruits_vegetables',
   fruits: 'fruits_vegetables',
   vegetable: 'fruits_vegetables',
   vegetables: 'fruits_vegetables',
@@ -123,7 +125,7 @@ export const getCategoryIcon = (key: string) => {
 }
 
 export const getTypeIcon = (key: string) => {
-  const normalizedKey = key.trim().toLowerCase().replace(/[\s-]+/g, '_')
+  const normalizedKey = key.trim().toLowerCase().replace(/[\s\/-]+/g, '_')
   const resolvedKey = TYPE_ICON_ALIASES[normalizedKey]
   return resolvedKey ? TYPE_ICONS[resolvedKey] : null
 }

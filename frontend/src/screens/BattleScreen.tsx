@@ -22,10 +22,10 @@ type WsEvent = {
   payload: unknown
 }
 
-function mapFrontendTypeToBackend(type: Pokefood['type']): 'fruveg' | 'meat' | 'grain' {
-  if (type === 'Grain') return 'grain'
+function mapFrontendTypeToBackend(type: Pokefood['type']): 'fruits_vegetables' | 'meat' | 'grains' {
+  if (type === 'Grain') return 'grains'
   if (type === 'Meat') return 'meat'
-  return 'fruveg'
+  return 'fruits_vegetables'
 }
 
 function toRawBase64(imageUrl: string): string {
