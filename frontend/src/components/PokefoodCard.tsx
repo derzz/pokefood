@@ -10,6 +10,19 @@ interface PokefoodCardProps {
   className?: string
 }
 
+function getTypeTooltip(type: string): string {
+  switch (type) {
+    case 'meat':
+      return 'Type: Meat'
+    case 'grains':
+      return 'Type: Grain'
+    case 'fruits_vegetables':
+      return 'Type: Fruit/Vegetable'
+    default:
+      return `Type: ${type}`
+  }
+}
+
 export const PokefoodCard: React.FC<PokefoodCardProps> = ({
   pokefood,
   onSelect,
@@ -44,7 +57,7 @@ export const PokefoodCard: React.FC<PokefoodCardProps> = ({
               src={typeIcon.src}
               alt={pokefood.type}
               size="md"
-              title={pokefood.type}
+              title={getTypeTooltip(pokefood.type)}
               className="flex-shrink-0"
             />
           )}
