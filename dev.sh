@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 RESET_DB=false
+ASSUME_YES=false
+BACKEND_PORT=8000
 
 usage() {
   cat <<'EOF'
@@ -12,6 +14,7 @@ Usage: ./dev.sh [options]
 
 Options:
   --reset-db, -r   Delete backend/*.db before starting servers
+  --yes, -y        Auto-confirm prompts (e.g., stop process on port 8000)
   --help, -h       Show this help message
 EOF
 }
@@ -20,6 +23,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --reset-db|-r)
       RESET_DB=true
+      shift
+      ;;
+    --yes|-y)
+      ASSUME_YES=true
       shift
       ;;
     --help|-h)
@@ -62,6 +69,37 @@ if [[ "$RESET_DB" == true ]]; then
   fi
 fi
 
+existing_backend_pid="$(lsof -tiTCP:"$BACKEND_PORT" -sTCP:LISTEN 2>/dev/null | head -n 1 || true)"
+if [[ -n "$existing_backend_pid" ]]; then
+  existing_backend_cmd="$(ps -p "$existing_backend_pid" -ww -o command= 2>/dev/null || true)"
+  echo "Port $BACKEND_PORT is already in use by PID $existing_backend_pid"
+  if [[ -n "$existing_backend_cmd" ]]; then
+    echo "Command: $existing_backend_cmd"
+  fi
+
+  should_kill="false"
+  if [[ "$ASSUME_YES" == true ]]; then
+    should_kill="true"
+  elif [[ -t 0 ]]; then
+    read -r -p "Stop this process and continue? [y/N] " reply
+    if [[ "$reply" =~ ^[Yy]$ ]]; then
+      should_kill="true"
+    fi
+  fi
+
+  if [[ "$should_kill" != "true" ]]; then
+    echo "Aborting start. Free port $BACKEND_PORT or run: ./dev.sh -y"
+    exit 1
+  fi
+
+  kill "$existing_backend_pid" 2>/dev/null || true
+  sleep 0.2
+  if lsof -tiTCP:"$BACKEND_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "Process on port $BACKEND_PORT did not stop gracefully. Forcing shutdown..."
+    kill -9 "$existing_backend_pid" 2>/dev/null || true
+  fi
+fi
+
 BACKEND_PID=""
 FRONTEND_PID=""
 
@@ -85,7 +123,7 @@ trap cleanup EXIT INT TERM
 echo "Starting backend on http://127.0.0.1:8000 ..."
 (
   cd "$BACKEND_DIR"
-  uv run uvicorn app.main:app --reload --port 8000
+  uv run uvicorn app.main:app --reload --port "$BACKEND_PORT"
 ) &
 BACKEND_PID=$!
 
