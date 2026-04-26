@@ -187,7 +187,7 @@ def _build_moves(labels: Sequence[str], rarity: int) -> list[Move]:
         damage = float(chosen.get("base_dmg", 10))
         bonus_dmg = float(chosen.get("cond_dmg", 0))
         effective_types = [FoodType(t) for t in chosen.get("cond_type", [])]
-        moves.append(Move(name=move_name, damage=max(1, damage), bonus_dmg=bonus_dmg, effective_types=effective_types))
+        moves.append(Move(name=move_name, damage=damage, bonus_dmg=bonus_dmg, effective_types=effective_types))
         used_names.add(move_name)
         if len(moves) >= 4:
             break
