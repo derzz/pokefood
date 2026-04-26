@@ -27,6 +27,29 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 const RARITY_ORDER: Record<string, number> = { Legendary: 4, Epic: 3, Rare: 2, Common: 1 }
 
+const OUTLINE_OFFSETS = [-3, 0, 3]
+function OutlinedTitle({ text }: { text: string }) {
+  return (
+    <View style={styles.titleContainer}>
+      {OUTLINE_OFFSETS.flatMap((dx) =>
+        OUTLINE_OFFSETS.map((dy) => {
+          if (dx === 0 && dy === 0) return null
+          return (
+            <Text
+              key={`${dx},${dy}`}
+              style={[styles.title, styles.titleOutline, { left: dx, top: dy }]}
+              aria-hidden
+            >
+              {text}
+            </Text>
+          )
+        })
+      )}
+      <Text style={styles.title}>{text}</Text>
+    </View>
+  )
+}
+
 function sortPokefood(list: Pokefood[], key: SortKey): Pokefood[] {
   const copy = [...list]
   switch (key) {
@@ -83,7 +106,7 @@ export default function HomeScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Pokefood</Text>
+            <OutlinedTitle text="Pokefood" />
             <Text style={styles.subtitle}>Collect delicious Pokefood from your meals</Text>
           </View>
 
@@ -165,8 +188,10 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1 },
   bgImage: { padding: 16, gap: 20, paddingBottom: 40 },
   header: { alignItems: 'center', gap: 8 },
-  title: { fontSize: 28, color: AppColors.onSurface, fontWeight: 'bold' },
-  subtitle: { fontSize: 11, color: AppColors.onSurfaceVariant, textAlign: 'center' },
+  titleContainer: { position: 'relative' },
+  title: { fontSize: 36, color: '#000000', fontWeight: 'bold' },
+  titleOutline: { position: 'absolute', color: 'rgba(255,255,255,0.95)' },
+  subtitle: { fontSize: 11, color: '#000000', textAlign: 'center', textShadowColor: 'rgba(255,255,255,0.5)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
   topSection: { gap: 16 },
   sortRow: { flexDirection: 'row' },
   sortBar: {
