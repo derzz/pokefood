@@ -104,7 +104,14 @@ class RoomManager:
             # 1. Check if already in a room
             existing_room = self._find_room_for_player_locked(player_id)
             if existing_room is not None:
-                return self._matchmake_response_for_player_locked(existing_room, player_id)
+                existing_match = self._matchmake_response_for_player_locked(existing_room, player_id)
+                if existing_match is not None:
+                    return existing_match
+
+                # Stale room with no opponent: drop membership so the player can rematch.
+                existing_room.players.pop(player_id, None)
+                if not existing_room.players:
+                    self.rooms.pop(existing_room.room_id, None)
 
             # 2. Check if already waiting
             existing_request = self._waiting_match_requests_by_player.get(player_id)
@@ -179,10 +186,10 @@ class RoomManager:
                 return room
         return None
 
-    def _matchmake_response_for_player_locked(self, room: RoomState, player_id: str) -> dict[str, str]:
+    def _matchmake_response_for_player_locked(self, room: RoomState, player_id: str) -> Optional[dict[str, str]]:
         opponent_id = next((pid for pid in room.players if pid != player_id), None)
         if opponent_id is None:
-            raise RoomError("opponent not found in room")
+            return None
         return {
             "room_id": room.room_id,
             "player_id": player_id,

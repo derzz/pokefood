@@ -102,7 +102,7 @@ async def get_all_my_pokefoods(
     db: Session = Depends(get_db),
 ) -> list[StoredPokefoodResponse]:
     # Alias kept for clients that expect a named getAll-style endpoint.
-    logger.info("pokefoods.all called", extra={"user_id": current_user.id})
+    logger.info("pokefoods.all called user_id: %s", current_user.id)
     return await list_my_pokefoods(current_user=current_user, db=db)
 
 
