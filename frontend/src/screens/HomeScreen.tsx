@@ -9,6 +9,8 @@ interface HomeScreenProps {
   onUploadStart: (file: File) => Promise<void>
   onNavigateToBattle?: (pokefood: Pokefood) => void | Promise<void>
   isMatchmaking?: boolean
+  onTransfer?: (pokefood: Pokefood) => Promise<void>
+  isTransferring?: boolean
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -16,9 +18,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onUploadStart,
   onNavigateToBattle,
   isMatchmaking = false,
+  onTransfer,
+  isTransferring = false,
 }) => {
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  const handleTransfer = async (pokefood: Pokefood) => {
+    await onTransfer?.(pokefood)
+    setSelectedPokefood(null)
+  }
 
   const handleFileSelect = async (file: File) => {
     setIsUploading(true)
@@ -57,6 +66,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           onClose={() => setSelectedPokefood(null)}
           onBattle={onNavigateToBattle}
           isBattleLoading={isMatchmaking}
+          onTransfer={onTransfer ? handleTransfer : undefined}
+          isTransferring={isTransferring}
         />
       )}
     </div>

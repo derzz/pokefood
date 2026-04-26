@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import type { Pokefood } from '../types'
 import { RarityBadge } from './RarityBadge'
 import { StatBar } from './StatBar'
@@ -10,6 +10,8 @@ interface PokefoodDetailProps {
   onClose: () => void
   onBattle?: (pokefood: Pokefood) => void | Promise<void>
   isBattleLoading?: boolean
+  onTransfer?: (pokefood: Pokefood) => Promise<void>
+  isTransferring?: boolean
   className?: string
 }
 
@@ -71,8 +73,16 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
   onClose,
   onBattle,
   isBattleLoading = false,
+  onTransfer,
+  isTransferring = false,
   className,
 }) => {
+  const [confirmingTransfer, setConfirmingTransfer] = useState(false)
+
+  const handleConfirmTransfer = useCallback(async () => {
+    await onTransfer?.(pokefood)
+  }, [onTransfer, pokefood])
+
   const statScaleMax = Math.max(pokefood.hp, pokefood.atk, 1)
   const displayedTypeLabel =
     pokefood.type === 'fruits_vegetables'
@@ -89,7 +99,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
       <button
         className="absolute right-3 top-3 h-9 w-9 rounded-md border border-[var(--color-outline)] text-lg text-[var(--color-on-surface-variant)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
         onClick={onClose}
-        disabled={isBattleLoading}
+        disabled={isBattleLoading || isTransferring}
       >
         ×
       </button>
@@ -221,7 +231,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
           <button
             className="w-full rounded-xl bg-[var(--color-primary)] px-4 py-3 text-xs text-[var(--color-on-primary)] transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80 md:text-sm"
             onClick={() => void onBattle(pokefood)}
-            disabled={isBattleLoading}
+            disabled={isBattleLoading || isTransferring}
           >
             <span className="inline-flex items-center gap-2">
               {isBattleLoading && (
@@ -230,6 +240,45 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
               {isBattleLoading ? 'Finding match...' : 'Battle'}
             </span>
           </button>
+        )}
+
+        {onTransfer && (
+          confirmingTransfer ? (
+            <div className="space-y-3 rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] p-4">
+              <p className="text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+                Transfer <span className="text-[var(--color-on-surface)]">{pokefood.name}</span>? This cannot be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs text-red-400 transition hover:bg-red-500/20 disabled:cursor-wait disabled:opacity-60 md:text-sm"
+                  onClick={() => void handleConfirmTransfer()}
+                  disabled={isTransferring}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {isTransferring && (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    )}
+                    {isTransferring ? 'Transferring...' : 'Confirm Transfer'}
+                  </span>
+                </button>
+                <button
+                  className="rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-4 py-2 text-xs text-[var(--color-on-surface)] transition hover:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                  onClick={() => setConfirmingTransfer(false)}
+                  disabled={isTransferring}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="w-full rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-4 py-3 text-xs text-[var(--color-on-surface-variant)] transition hover:border-red-400/60 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              onClick={() => setConfirmingTransfer(true)}
+              disabled={isBattleLoading || isTransferring}
+            >
+              Transfer
+            </button>
+          )
         )}
         </div>
       </div>

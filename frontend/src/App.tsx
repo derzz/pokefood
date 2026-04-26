@@ -6,6 +6,7 @@ import { LoginScreen } from './screens/LoginScreen'
 import { RegisterScreen } from "./screens/RegisterScreen"
 import {
   createBattleMatch,
+  deletePokefood,
   devLogin,
   getCurrentUserId,
   getUserCollection,
@@ -25,6 +26,7 @@ function App() {
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [battleSession, setBattleSession] = useState<BattleMatchSession | null>(null)
   const [isMatchmaking, setIsMatchmaking] = useState(false)
+  const [isTransferring, setIsTransferring] = useState(false)
   const matchRequestIdRef = useRef(0)
   const showDevLogin = import.meta.env.DEV
 
@@ -104,6 +106,18 @@ function App() {
     }
   }
 
+  const handleTransfer = async (pokefood: Pokefood) => {
+    setIsTransferring(true)
+    try {
+      await deletePokefood(pokefood.id)
+      setCollection((prev) => prev.filter((p) => p.id !== pokefood.id))
+    } catch (error) {
+      console.error('Transfer failed:', error)
+    } finally {
+      setIsTransferring(false)
+    }
+  }
+
   const handleExitBattle = () => {
     setScreen('home')
     setSelectedPokefood(null)
@@ -160,6 +174,8 @@ function App() {
         onUploadStart={handleUploadStart}
         onNavigateToBattle={handleNavigateToBattle}
         isMatchmaking={isMatchmaking}
+        onTransfer={handleTransfer}
+        isTransferring={isTransferring}
       />
     </main>
   )
