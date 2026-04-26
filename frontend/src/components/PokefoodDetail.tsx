@@ -220,7 +220,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
                     )}
                     <MoveNameMarquee name={move.name} />
                   </span>
-                  <span className="flex-shrink-0 text-[var(--color-on-surface-variant)]">PWR {move.power}</span>
+                  <span className="flex-shrink-0 text-[var(--color-on-surface-variant)]">PWR {move.power}x</span>
                 </li>
               )
             })}

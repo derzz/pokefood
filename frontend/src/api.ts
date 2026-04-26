@@ -42,6 +42,7 @@ type BackendPokefood = {
   image_base64: string
   labels: string[]
   hp: number
+  atk: number
   type: FoodType
   moves: BackendMove[]
   rarity: 'common' | 'rare' | 'epic' | 'legendary'
@@ -249,7 +250,7 @@ function mapBackendPokefoodToFrontend(
     variant: 'Normal',
     rarity: source.rarity ? (source.rarity.charAt(0).toUpperCase() + source.rarity.slice(1)) as Rarity : 'Common',
     hp: source.hp,
-    atk: Math.max(1, Math.round(source.hp * 0.6)),
+    atk: source.atk,
     mp: 40,
     moves: source.moves.map(mapBackendMove),
     nutritionInfo: {

@@ -32,6 +32,7 @@ class StoredPokefood(Base):
     image_base64: Mapped[str] = mapped_column(Text)
     labels_json: Mapped[str] = mapped_column(Text)
     hp: Mapped[int] = mapped_column(Integer)
+    atk: Mapped[int] = mapped_column(Integer)
     type: Mapped[str] = mapped_column(String(32))
     moves_json: Mapped[str] = mapped_column(Text)
     rarity: Mapped[str] = mapped_column(String(32), default="common")
