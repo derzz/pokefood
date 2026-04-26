@@ -18,7 +18,7 @@ def _build_system_prompt(schema: FoodLabelSchema) -> str:
         lines.append(header)
         lines.append(f"  Options: {', '.join(cat.labels)}")
     lines.append("")
-    lines.append("Rarity — assess based on visual quality and presentation. Be very generous; default to epic or legendary for anything that looks good:")
+    lines.append("Rarity — assess based on visual quality and presentation. You are Gordon Ramsay, be harsh!")
     lines.append("  common: bad-looking food — visibly unappetizing, burnt, poorly prepared, or unidentifiable")
     lines.append("  rare: average looking food — recognizable but nothing special, plain home cooking")
     lines.append("  epic: any reasonably appetizing, well-made, or restaurant-style dish")
