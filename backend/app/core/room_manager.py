@@ -277,14 +277,18 @@ class RoomManager:
             return self._snapshot_locked(room)
 
     async def broadcast(self, room_id: str, message: dict) -> None:
-        room = self.rooms.get(room_id)
-        if not room:
-            return
+        async with self._lock:
+            room = self.rooms.get(room_id)
+            if not room:
+                return
+            recipients = [
+                (player_id, player.websocket)
+                for player_id, player in room.players.items()
+                if player.websocket is not None
+            ]
+
         disconnected_ids: list[str] = []
-        for player_id, player in room.players.items():
-            websocket = player.websocket
-            if websocket is None:
-                continue
+        for player_id, websocket in recipients:
             try:
                 await websocket.send_json(message)
             except Exception:
