@@ -16,6 +16,18 @@ import {
   uploadFoodImage,
 } from './api'
 
+function loadBattleRecord(userId: string) {
+  return {
+    won: parseInt(localStorage.getItem(`pokefood.${userId}.wins`) ?? '0', 10),
+    lost: parseInt(localStorage.getItem(`pokefood.${userId}.losses`) ?? '0', 10),
+  }
+}
+
+function saveBattleRecord(userId: string, won: number, lost: number) {
+  localStorage.setItem(`pokefood.${userId}.wins`, String(won))
+  localStorage.setItem(`pokefood.${userId}.losses`, String(lost))
+}
+
 type AppScreen = 'home' | 'battle'
 
 function App() {
@@ -27,18 +39,27 @@ function App() {
   const [battleSession, setBattleSession] = useState<BattleMatchSession | null>(null)
   const [isMatchmaking, setIsMatchmaking] = useState(false)
   const [isTransferring, setIsTransferring] = useState(false)
+  const [battlesWon, setBattlesWon] = useState(0)
+  const [battlesLost, setBattlesLost] = useState(0)
   const matchRequestIdRef = useRef(0)
   const showDevLogin = import.meta.env.DEV
 
   useEffect(() => {
     if (!authenticated) {
       setCollection([])
+      setBattlesWon(0)
+      setBattlesLost(0)
       return
     }
 
+    const userId = getCurrentUserId()
+    const record = loadBattleRecord(userId)
+    setBattlesWon(record.won)
+    setBattlesLost(record.lost)
+
     const loadCollection = async () => {
       try {
-        const fetched = await getUserCollection(getCurrentUserId())
+        const fetched = await getUserCollection(userId)
         setCollection(fetched)
       } catch (e) { console.error(e) }
     }
@@ -118,6 +139,18 @@ function App() {
     }
   }
 
+  const handleBattleResult = (result: 'win' | 'loss') => {
+    const userId = getCurrentUserId()
+    const current = loadBattleRecord(userId)
+    const next = {
+      won: current.won + (result === 'win' ? 1 : 0),
+      lost: current.lost + (result === 'loss' ? 1 : 0),
+    }
+    saveBattleRecord(userId, next.won, next.lost)
+    setBattlesWon(next.won)
+    setBattlesLost(next.lost)
+  }
+
   const handleExitBattle = () => {
     setScreen('home')
     setSelectedPokefood(null)
@@ -153,6 +186,7 @@ function App() {
           playerPokefood={selectedPokefood}
           matchSession={battleSession}
           onExit={handleExitBattle}
+          onBattleResult={handleBattleResult}
         />
       </main>
     )
@@ -176,6 +210,8 @@ function App() {
         isMatchmaking={isMatchmaking}
         onTransfer={handleTransfer}
         isTransferring={isTransferring}
+        battlesWon={battlesWon}
+        battlesLost={battlesLost}
       />
     </main>
   )

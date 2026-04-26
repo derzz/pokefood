@@ -15,6 +15,7 @@ interface BattleScreenProps {
   playerPokefood: Pokefood
   matchSession: BattleMatchSession
   onExit: () => void
+  onBattleResult?: (result: 'win' | 'loss') => void
 }
 
 type WsEvent = {
@@ -85,6 +86,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   playerPokefood,
   matchSession,
   onExit,
+  onBattleResult,
 }) => {
   const [roomState, setRoomState] = useState<BattleRoomSnapshot | null>(null)
   const [battleLog, setBattleLog] = useState<string[]>(['Connecting to battle server...'])
@@ -95,6 +97,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const [showClashFlash, setShowClashFlash] = useState(false)
   const websocketRef = useRef<WebSocket | null>(null)
   const onExitRef = useRef(onExit)
+  const onBattleResultRef = useRef(onBattleResult)
   const reconnectAttemptsRef = useRef(0)
   const reconnectTimerRef = useRef<number | null>(null)
   const exitTimerRef = useRef<number | null>(null)
@@ -234,7 +237,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         if (incoming.type === 'battle_end') {
           const result = incoming.payload as BattleActionResult
           setWinnerId(result.winner_id)
-          setBattleLog((prev) => [...prev, result.winner_id === matchSession.playerId ? 'Victory!' : 'Defeat!'])
+          const won = result.winner_id === matchSession.playerId
+          setBattleLog((prev) => [...prev, won ? 'Victory!' : 'Defeat!'])
+          onBattleResultRef.current?.(won ? 'win' : 'loss')
           return
         }
       }

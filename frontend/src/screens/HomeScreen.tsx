@@ -3,6 +3,7 @@ import type { Pokefood } from '../types'
 import { UploadZone } from '../components/UploadZone'
 import { PokefoodGrid } from '../components/PokefoodGrid'
 import { PokefoodDetail } from '../components/PokefoodDetail'
+import { CollectionStats } from '../components/CollectionStats'
 
 interface HomeScreenProps {
   pokefoodCollection: Pokefood[]
@@ -11,6 +12,8 @@ interface HomeScreenProps {
   isMatchmaking?: boolean
   onTransfer?: (pokefood: Pokefood) => Promise<void>
   isTransferring?: boolean
+  battlesWon?: number
+  battlesLost?: number
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -20,6 +23,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   isMatchmaking = false,
   onTransfer,
   isTransferring = false,
+  battlesWon = 0,
+  battlesLost = 0,
 }) => {
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -47,8 +52,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </p>
       </header>
 
-      <section>
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <UploadZone onFileSelect={handleFileSelect} isLoading={isUploading} />
+        <CollectionStats
+          collection={pokefoodCollection}
+          battlesWon={battlesWon}
+          battlesLost={battlesLost}
+        />
       </section>
 
       <section className="space-y-4">
