@@ -10,6 +10,8 @@ const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
 const API_POKEFOODS_BASE_PATH = '/api/v1/pokefoods'
 const API_POKEFOODS_GET_ALL_PATH = `${API_POKEFOODS_BASE_PATH}/all`
+const NGROK_SKIP_HEADER_KEY = 'ngrok-skip-browser-warning'
+const NGROK_SKIP_HEADER_VALUE = 'true'
 const ACCESS_TOKEN_KEY = 'pokefood.accessToken'
 const USER_ID_KEY = 'pokefood.userId'
 
@@ -75,6 +77,12 @@ type BackendDevLoginResponse = {
   token_type: 'bearer'
 }
 
+function buildBaseHeaders(): HeadersInit {
+  return {
+    [NGROK_SKIP_HEADER_KEY]: NGROK_SKIP_HEADER_VALUE,
+  }
+}
+
 /**
  * Register a new user account
  */
@@ -82,6 +90,7 @@ export async function register(email: string, password: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
     method: 'POST',
     headers: {
+      ...buildBaseHeaders(),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -107,6 +116,7 @@ export async function login(email: string, password: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
     method: 'POST',
     headers: {
+      ...buildBaseHeaders(),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -131,6 +141,9 @@ export async function devLogin(email?: string): Promise<void> {
 
   const response = await fetch(`${API_BASE_URL}/api/v1/auth/dev-login?${query.toString()}`, {
     method: 'POST',
+    headers: {
+      ...buildBaseHeaders(),
+    },
   })
 
   if (!response.ok) {
@@ -195,6 +208,7 @@ function buildAuthHeaders(): HeadersInit {
   }
 
   return {
+    ...buildBaseHeaders(),
     Authorization: `Bearer ${token}`,
   }
 }
@@ -276,8 +290,8 @@ export async function uploadFoodImage(file: File): Promise<Pokefood> {
   const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_BASE_PATH}/from-image`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       ...buildAuthHeaders(),
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       image_base64: imageBase64,
