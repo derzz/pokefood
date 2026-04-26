@@ -224,7 +224,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
       <span className="flex min-w-0 flex-1 items-center gap-2">
         {/* Iterate through the list of effective types */}
           <span className="flex gap-1">
-          {move.effectiveType.map((type, index) => {
+          {(move.effectiveType ?? []).map((type, index) => {
               const typeIcon = getTypeIcon(type.toLowerCase().replace(/\s+/g, '_'));
               return typeIcon ? (
                   <InlineIcon
