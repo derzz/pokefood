@@ -4,6 +4,7 @@ import { RarityBadge } from './RarityBadge'
 import { StatBar } from './StatBar'
 import { InlineIcon } from './Icon'
 import { getNutritionIcon, getTypeIcon, getStatIcon } from '../utils/icons'
+import { formatDisplayName } from '../utils/format'
 
 interface PokefoodDetailProps {
   pokefood: Pokefood
@@ -111,14 +112,14 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
             <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] md:h-24 md:w-24">
               <img
                 src={pokefood.pixelArtUrl || pokefood.imageUrl}
-                alt={pokefood.name}
+                alt={formatDisplayName(pokefood.name)}
                 className="h-full w-full object-cover"
               />
             </div>
 
             <div className="min-w-0 flex-1 space-y-2">
               <h2 className="min-w-0 text-xl text-[var(--color-on-surface)] md:text-2xl">
-                <MoveNameMarquee name={pokefood.name} textClassName="text-xl md:text-2xl" />
+                <MoveNameMarquee name={formatDisplayName(pokefood.name)} textClassName="text-xl md:text-2xl" />
               </h2>
               <div className="flex flex-wrap items-center gap-2">
                 <RarityBadge rarity={pokefood.rarity} />
@@ -249,7 +250,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
           confirmingTransfer ? (
             <div className="space-y-3 rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] p-4">
               <p className="text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-                Transfer <span className="text-[var(--color-on-surface)]">{pokefood.name}</span>? This cannot be undone.
+                Transfer <span className="text-[var(--color-on-surface)]">{formatDisplayName(pokefood.name)}</span>? This cannot be undone.
               </p>
               <div className="flex gap-2">
                 <button

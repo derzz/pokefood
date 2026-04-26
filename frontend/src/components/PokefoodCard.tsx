@@ -3,6 +3,7 @@ import type { Pokefood } from '../types'
 import { RarityBadge } from './RarityBadge'
 import { InlineIcon } from './Icon'
 import { getTypeIcon } from '../utils/icons'
+import { formatDisplayName } from '../utils/format'
 
 interface PokefoodCardProps {
   pokefood: Pokefood
@@ -60,7 +61,7 @@ export const PokefoodCard: React.FC<PokefoodCardProps> = ({
       </div>
       <div className="space-y-3 p-4">
         <div className="flex items-center justify-between">
-          <h3 className="flex-1 text-sm text-[var(--color-on-surface)] md:text-base">{pokefood.name}</h3>
+          <h3 className="flex-1 text-sm text-[var(--color-on-surface)] md:text-base">{formatDisplayName(pokefood.name)}</h3>
           {typeIcon && (
             <InlineIcon
               src={typeIcon.src}

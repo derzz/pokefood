@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Pokefood } from '../types'
 import { FoodType } from '../constants'
+import { formatDisplayName } from '../utils/format'
 
 interface CollectionStatsProps {
   collection: Pokefood[]
@@ -78,8 +79,8 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({
 
       <div className="space-y-1.5">
         <p className="text-[9px] uppercase tracking-widest text-black/50">Champions</p>
-        <StatRow label="Strongest (ATK)" value={strongest ? strongest.name : '—'} />
-        <StatRow label="Toughest (HP)" value={toughest ? toughest.name : '—'} />
+        <StatRow label="Strongest (ATK)" value={strongest ? formatDisplayName(strongest.name) : '—'} />
+        <StatRow label="Toughest (HP)" value={toughest ? formatDisplayName(toughest.name) : '—'} />
       </div>
 
       <div className="space-y-1.5">

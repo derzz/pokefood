@@ -10,6 +10,7 @@ import type {
 import { StatBar } from '../components/StatBar'
 import { MoveButton } from '../components/MoveButton'
 import { RarityBadge } from '../components/RarityBadge'
+import { formatDisplayName } from '../utils/format'
 
 interface BattleScreenProps {
   playerPokefood: Pokefood
@@ -186,7 +187,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           return
         }
         setIsConnected(true)
-        setBattleLog((prev) => [...prev, `Match found. Go! ${playerPokefood.name}!`])
+        setBattleLog((prev) => [...prev, `Match found. Go! ${formatDisplayName(playerPokefood.name)}!`])
         websocket.send(JSON.stringify({ type: 'join', payload: joinPayload.current() }))
         websocket.send(JSON.stringify({ type: 'ready', payload: {} }))
       }
@@ -305,7 +306,10 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     websocket.send(JSON.stringify({ type: 'action', payload: { move: move.name } }))
   }
 
-  const opponentName = opponentSnapshot?.pokefood?.personal_name || 'Waiting for opponent...'
+  const displayedPlayerName = formatDisplayName(playerPokefood.name)
+  const displayedOpponentName = opponentSnapshot?.pokefood?.personal_name
+    ? formatDisplayName(opponentSnapshot.pokefood.personal_name)
+    : 'Waiting for opponent...'
   const opponentImage = opponentSnapshot?.pokefood
     ? toDataUrl(opponentSnapshot.pokefood.image_base64)
     : null
@@ -332,14 +336,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           {/* Player (left) */}
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="space-y-1">
-              <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{playerPokefood.name}</h3>
+              <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{displayedPlayerName}</h3>
               <RarityBadge rarity={playerPokefood.rarity} />
             </div>
             {/* overflow-visible so the sprite can travel outside its box during the lunge */}
             <div className="relative flex h-36 w-36 items-center justify-center overflow-visible md:h-44 md:w-44">
               <img
                 src={playerPokefood.pixelArtUrl || playerPokefood.imageUrl}
-                alt={playerPokefood.name}
+                alt={displayedPlayerName}
                 className={`battle-sprite h-full w-full object-contain ${spriteClasses('player', battleAnimation)}`.trim()}
               />
             </div>
@@ -355,7 +359,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           {/* Opponent (right) */}
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="space-y-1">
-              <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{opponentName}</h3>
+              <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{displayedOpponentName}</h3>
               <RarityBadge rarity="Common" />
             </div>
             {/* overflow-visible so the sprite can travel outside its box during the lunge */}
@@ -363,7 +367,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
               {opponentImage ? (
                 <img
                   src={opponentImage}
-                  alt={opponentName}
+                  alt={displayedOpponentName}
                   className={`battle-sprite h-full w-full object-contain ${spriteClasses('opponent', battleAnimation)}`.trim()}
                 />
               ) : (
