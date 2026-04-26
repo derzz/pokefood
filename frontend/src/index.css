@@ -191,3 +191,33 @@ body {
   animation-iteration-count: infinite;
   animation-timing-function: linear;
 }
+
+/* ===== Legendary Rainbow ===== */
+
+@keyframes legendary-rainbow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.rarity-legendary-bg {
+  background: linear-gradient(270deg, #ff0000, #ff8800, #ffff00, #00ff00, #00cfff, #8800ff, #ff00cc, #ff0000);
+  background-size: 400% 400%;
+  animation: legendary-rainbow 3s linear infinite;
+}
+
+@keyframes legendary-border-glow {
+  0%   { box-shadow: 0 0 0 2px #ff0000, 0 0 12px 2px #ff000088; }
+  14%  { box-shadow: 0 0 0 2px #ff8800, 0 0 12px 2px #ff880088; }
+  28%  { box-shadow: 0 0 0 2px #ffff00, 0 0 12px 2px #ffff0088; }
+  42%  { box-shadow: 0 0 0 2px #00ff00, 0 0 12px 2px #00ff0088; }
+  57%  { box-shadow: 0 0 0 2px #00cfff, 0 0 12px 2px #00cfff88; }
+  71%  { box-shadow: 0 0 0 2px #8800ff, 0 0 12px 2px #8800ff88; }
+  85%  { box-shadow: 0 0 0 2px #ff00cc, 0 0 12px 2px #ff00cc88; }
+  100% { box-shadow: 0 0 0 2px #ff0000, 0 0 12px 2px #ff000088; }
+}
+
+.rarity-legendary-border {
+  border-color: transparent !important;
+  animation: legendary-border-glow 3s linear infinite;
+}

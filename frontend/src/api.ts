@@ -1,4 +1,4 @@
-import type { BattleMatchSession, Move, Pokefood } from './types'
+import type { BattleMatchSession, Move, Pokefood, Rarity } from './types'
 import { FoodType } from './constants'
 
 /**
@@ -44,6 +44,7 @@ type BackendPokefood = {
   hp: number
   type: FoodType
   moves: BackendMove[]
+  rarity: 'common' | 'rare' | 'epic' | 'legendary'
 }
 
 type BackendCreateResponse = {
@@ -246,7 +247,7 @@ function mapBackendPokefoodToFrontend(
     imageUrl: toImageDataUrl(source.image_base64),
     type: source.type,
     variant: 'Normal',
-    rarity: 'Common',
+    rarity: source.rarity ? (source.rarity.charAt(0).toUpperCase() + source.rarity.slice(1)) as Rarity : 'Common',
     hp: source.hp,
     atk: Math.max(1, Math.round(source.hp * 0.6)),
     mp: 40,

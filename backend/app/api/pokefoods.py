@@ -37,6 +37,7 @@ def _to_response(record: StoredPokefood) -> StoredPokefoodResponse:
         hp=record.hp,
         type=record.type,
         moves=[Move.model_validate(move) for move in json.loads(record.moves_json)],
+        rarity=record.rarity,
     )
     return StoredPokefoodResponse(
         id=record.id,
@@ -71,6 +72,7 @@ async def create_pokefood_from_image(
         hp=pokefood.hp,
         type=pokefood.type,
         moves_json=json.dumps([move.model_dump(mode="json") for move in pokefood.moves]),
+        rarity=pokefood.rarity,
     )
     db.add(record)
     db.commit()

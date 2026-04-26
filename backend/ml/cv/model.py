@@ -1,6 +1,15 @@
+from enum import Enum
+
 from pydantic import BaseModel, Field
 
 from models.constants import FoodType
+
+
+class Rarity(str, Enum):
+    common = "common"
+    rare = "rare"
+    epic = "epic"
+    legendary = "legendary"
 
 
 class FoodCategory(BaseModel):
@@ -74,3 +83,4 @@ class FoodLabelResult(BaseModel):
     description: str = Field(description="A brief description of the food item")
     type: FoodType = Field(description=f"Primary food type: {', '.join(repr(t.value) for t in FoodType)}")
     labels: list[CategoryLabel] = Field(description="One entry per category in the schema")
+    rarity: Rarity = Field(description="Visual rarity based on how impressive or rare the dish appears: common, rare, epic, or legendary")

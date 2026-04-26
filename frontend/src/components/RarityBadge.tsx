@@ -7,11 +7,20 @@ interface RarityBadgeProps {
 }
 
 export const RarityBadge: React.FC<RarityBadgeProps> = ({ rarity, className }) => {
-  const rarityColors: Record<Rarity, string> = {
-    Common: '#888888',
-    Rare: '#4169E1',
-    Epic: '#9932CC',
-    Legendary: '#FFD700',
+  const rarityColors: Record<Exclude<Rarity, 'Legendary'>, string> = {
+    Common: '#9B9B9B',
+    Rare: '#F97800',
+    Epic: '#A020F0',
+  }
+
+  if (rarity === 'Legendary') {
+    return (
+      <span
+        className={`rarity-legendary-bg inline-flex rounded-full px-2.5 py-1 text-[10px] text-white md:text-xs ${className || ''}`}
+      >
+        {rarity}
+      </span>
+    )
   }
 
   return (
