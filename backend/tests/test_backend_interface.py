@@ -6,8 +6,6 @@ from fastapi.testclient import TestClient
 
 from app.core.battle_runtime import room_manager
 from app.core.room_manager import PlayerState, RoomState
-from app.db.models import User
-from app.db.session import SessionLocal
 from app.main import app
 from models.constants import FoodType
 
@@ -140,16 +138,11 @@ def test_matchmake_recovers_from_stale_single_player_room() -> None:
     headers_a = _auth_headers(email=email_a)
     headers_b = _auth_headers(email=f"stale-b-{uuid.uuid4().hex[:8]}@example.com")
 
-    with SessionLocal() as db:
-        user_a = db.query(User).filter(User.email == email_a).first()
-        assert user_a is not None
-        player_id_a = f"user-{user_a.id}"
-
     stale_room_id = f"room-stale-{uuid.uuid4().hex[:8]}"
     room_manager.rooms[stale_room_id] = RoomState(
         room_id=stale_room_id,
         players={
-            player_id_a: PlayerState(),
+            email_a: PlayerState(),
         },
     )
 
