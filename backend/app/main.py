@@ -29,14 +29,40 @@ def configure_logging() -> None:
 configure_logging()
 logger = logging.getLogger(__name__)
 
+
+def _parse_allowed_origins(raw_origins: str | None) -> list[str]:
+    if not raw_origins:
+        return [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return origins or [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+
 app = FastAPI(title="PokeFood Backend", version="0.1.0")
+
+allowed_origins = _parse_allowed_origins(os.getenv("BACKEND_ALLOW_ORIGINS"))
+allow_all_origins = "*" in allowed_origins
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("BACKEND_ALLOW_ORIGINS", "*").split(","),
+    allow_origins=["*"] if allow_all_origins else allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin"],
+)
+
+logger.info(
+    "cors configured",
+    extra={
+        "allow_all_origins": allow_all_origins,
+        "allowed_origins": allowed_origins,
+    },
 )
 
 # Keep DB initialization eager so tests that instantiate TestClient globally still work.

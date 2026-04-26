@@ -304,6 +304,7 @@ export async function uploadFoodImage(file: File): Promise<Pokefood> {
  */
 export async function getUserCollection(userId: string): Promise<Pokefood[]> {
   const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_GET_ALL_PATH}`, {
+    method: 'GET',
     headers: {
       ...buildAuthHeaders(),
     },
