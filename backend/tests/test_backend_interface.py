@@ -61,6 +61,30 @@ def test_create_pokefood_from_image_mock() -> None:
     assert len(pokefood["moves"]) <= 4
 
 
+def test_create_migu_card_from_console_command() -> None:
+    headers = _auth_headers()
+    response = client.post(
+        "/api/v1/pokefoods/migu",
+        json={"image_base64": TEST_IMAGE_BASE64},
+        headers=headers,
+    )
+    assert response.status_code == 200
+
+    body = response.json()
+    pokefood = body["pokefood"]
+    assert pokefood["name"] == "migu"
+    assert pokefood["personal_name"] == "migu"
+    assert pokefood["rarity"] == "legendary"
+    assert pokefood["hp"] == 1000
+    assert len(pokefood["moves"]) == 1
+    assert pokefood["moves"][0]["name"] == "megu"
+    assert pokefood["moves"][0]["damage"] == 1000
+
+    collection = client.get("/api/v1/pokefoods/all", headers=headers)
+    assert collection.status_code == 200
+    assert any(item["pokefood"]["name"] == "migu" for item in collection.json())
+
+
 def test_websocket_battle_room_flow() -> None:
     with client.websocket_connect("/ws/battle/room-1?player_id=p1") as ws1:
         with client.websocket_connect("/ws/battle/room-1?player_id=p2") as ws2:

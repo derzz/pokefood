@@ -41,7 +41,6 @@ export interface UploadRequest {
   filename: string
   mimeType: string
 }
-
 export interface BattleMatchSession {
   roomId: string
   playerId: string

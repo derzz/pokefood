@@ -1,8 +1,6 @@
 import json
-import os
 import logging
 
-from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,13 +9,10 @@ from app.core.security import get_current_user
 from app.db.models import StoredPokefood, User
 from app.db.session import get_db
 from app.services.cv_service import CVService
-from models.image_input import PokefoodFromImageRequest, PokefoodFromImageResponse
+from models.constants import FoodType
+from models.image_input import MiguCreateRequest, PokefoodFromImageRequest, PokefoodFromImageResponse
 from models.pokefood import Move, Pokefood
 from models.stored_pokefood import StoredPokefoodResponse
-
-import base64
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict, field_validator
 
 router = APIRouter(prefix="/api/v1/pokefoods", tags=["pokefoods"])
 logger = logging.getLogger(__name__)
@@ -43,6 +38,19 @@ def _to_response(record: StoredPokefood) -> StoredPokefoodResponse:
         id=record.id,
         created_at=record.created_at,
         pokefood=pokefood,
+    )
+
+
+def _build_migu_pokefood(image_base64: str) -> Pokefood:
+    return Pokefood(
+        personal_name="migu",
+        name="migu",
+        image_base64=image_base64,
+        labels=["migu", "legendary", "console"],
+        hp=1000,
+        type=FoodType.MEAT,
+        moves=[Move(name="megu", damage=1000)],
+        rarity="legendary",
     )
 
 
@@ -81,7 +89,35 @@ async def create_pokefood_from_image(
     return PokefoodFromImageResponse(
         pokefood=pokefood,
         stored_pokefood_id=record.id,
+        source_confidence=1.0,
     )
+
+
+@router.post("/migu", response_model=StoredPokefoodResponse)
+async def create_migu_pokefood(
+    request: MiguCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StoredPokefoodResponse:
+    logger.info("pokefoods.migu called", extra={"user_id": current_user.id})
+    pokefood = _build_migu_pokefood(image_base64=request.image_base64)
+
+    record = StoredPokefood(
+        user_id=current_user.id,
+        personal_name=pokefood.personal_name,
+        name=pokefood.name,
+        image_base64=pokefood.image_base64,
+        labels_json=json.dumps(pokefood.labels),
+        hp=pokefood.hp,
+        type=pokefood.type,
+        moves_json=json.dumps([move.model_dump(mode="json") for move in pokefood.moves]),
+        rarity=pokefood.rarity,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    return _to_response(record)
 
 
 @router.get("", response_model=list[StoredPokefoodResponse])

@@ -6,7 +6,9 @@ import { FoodType } from './constants'
  * TODO: Replace with actual backend endpoints
  */
 
-const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const RAW_API_BASE_URL = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL
+  : 'http://127.0.0.1:8000'
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
 const API_POKEFOODS_BASE_PATH = '/api/v1/pokefoods'
 const API_POKEFOODS_GET_ALL_PATH = `${API_POKEFOODS_BASE_PATH}/all`
@@ -241,6 +243,8 @@ function mapBackendPokefoodToFrontend(
   createdAt: Date,
   uploadedBy: string,
 ): Pokefood {
+  const isMigu = source.name.toLowerCase() === 'migu' && source.rarity === 'legendary'
+
   return {
     id,
     name: source.personal_name || source.name,
@@ -249,7 +253,7 @@ function mapBackendPokefoodToFrontend(
     variant: 'Normal',
     rarity: source.rarity ? (source.rarity.charAt(0).toUpperCase() + source.rarity.slice(1)) as Rarity : 'Common',
     hp: source.hp,
-    atk: Math.max(1, Math.round(source.hp * 0.6)),
+    atk: isMigu ? 1000 : Math.max(1, Math.round(source.hp * 0.6)),
     mp: 40,
     moves: source.moves.map(mapBackendMove),
     nutritionInfo: {
@@ -277,6 +281,19 @@ function fileToBase64(file: File): Promise<string> {
     }
     reader.onerror = reject
     reader.readAsDataURL(file)
+  })
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      const base64 = result.split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
   })
 }
 
@@ -310,6 +327,45 @@ export async function uploadFoodImage(file: File): Promise<Pokefood> {
     payload.pokefood,
     String(payload.stored_pokefood_id),
     new Date(),
+    userId,
+  )
+}
+
+/**
+ * Create the legendary Migu card from the public frontend asset.
+ */
+export async function createMiguCard(): Promise<Pokefood> {
+  const assetResponse = await fetch('/misc/migu.png')
+
+  if (!assetResponse.ok) {
+    throw new Error('Failed to load migu.png')
+  }
+
+  const imageBase64 = await blobToBase64(await assetResponse.blob())
+
+  const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_BASE_PATH}/migu`, {
+    method: 'POST',
+    headers: {
+      ...buildAuthHeaders(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(errorBody || 'Failed to create Migu card')
+  }
+
+  const payload = (await response.json()) as BackendStoredPokefood
+  const userId = getCurrentUserId()
+
+  return mapBackendPokefoodToFrontend(
+    payload.pokefood,
+    String(payload.id),
+    new Date(payload.created_at),
     userId,
   )
 }

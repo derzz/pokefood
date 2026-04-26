@@ -7,6 +7,7 @@ import { RegisterScreen } from "./screens/RegisterScreen"
 import {
   createBattleMatch,
   deletePokefood,
+  createMiguCard,
   devLogin,
   getCurrentUserId,
   getUserCollection,
@@ -65,6 +66,24 @@ function App() {
     }
     void loadCollection()
   }, [authenticated])
+
+  useEffect(() => {
+    const globalWindow = window as Window & { migu?: () => Promise<Pokefood> }
+
+    const runMigu = async () => {
+      const newPokefood = await createMiguCard()
+      setCollection((prev) => [...prev, newPokefood])
+      return newPokefood
+    }
+
+    globalWindow.migu = runMigu
+
+    return () => {
+      if (globalWindow.migu === runMigu) {
+        delete globalWindow.migu
+      }
+    }
+  }, [])
 
   const handleLogin = async (e: string, p: string) => {
     await login(e, p)
