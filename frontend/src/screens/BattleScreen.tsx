@@ -142,7 +142,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           return
         }
         setIsConnected(true)
-        setBattleLog((prev) => [...prev, 'Match found. Sending your Pokefood...'])
+        setBattleLog((prev) => [...prev, `Match found. Go! ${playerPokefood.name}!`])
         websocket.send(JSON.stringify({ type: 'join', payload: joinPayload.current() }))
         websocket.send(JSON.stringify({ type: 'ready', payload: {} }))
       }
