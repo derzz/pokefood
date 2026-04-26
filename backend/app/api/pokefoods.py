@@ -47,10 +47,11 @@ def _build_migu_pokefood(image_base64: str) -> Pokefood:
         personal_name="migu",
         name="migu",
         image_base64=image_base64,
-        labels=["migu", "legendary", "console"],
-        hp=1000,
+        labels=["omg it's migu"],
+        hp=9001,
+        atk=9001,
         type=FoodType.MEAT,
-        moves=[Move(name="megu", damage=1000)],
+        moves=[Move(name="megu", damage=1000, bonus_dmg=2000, effective_types=[FoodType.MEAT, FoodType.GRAINS, FoodType.FRUITS_VEGETABLES])],
         rarity="legendary",
     )
 
@@ -111,6 +112,7 @@ async def create_migu_pokefood(
         image_base64=pokefood.image_base64,
         labels_json=json.dumps(pokefood.labels),
         hp=pokefood.hp,
+        atk=pokefood.atk,
         type=pokefood.type,
         moves_json=json.dumps([move.model_dump(mode="json") for move in pokefood.moves]),
         rarity=pokefood.rarity,
