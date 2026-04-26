@@ -172,7 +172,7 @@ function App() {
 
   if (screen === 'battle' && selectedPokefood && battleSession) {
     return (
-      <main className="min-h-screen bg-[var(--color-surface)] px-4 py-6 text-[var(--color-on-surface)] md:px-8">
+      <main className="min-h-screen bg-[var(--color-surface)] bg-[url('/bg.png')] bg-cover bg-bottom px-4 py-6 text-[var(--color-on-surface)] md:px-8">
         <div className="mx-auto mb-4 flex w-full max-w-6xl justify-end">
           <button
             type="button"
@@ -193,7 +193,7 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-surface)] px-4 py-6 text-[var(--color-on-surface)] md:px-8">
+    <main className="min-h-screen bg-[var(--color-surface)] bg-[url('/bg.png')] bg-cover bg-bottom px-4 py-6 text-[var(--color-on-surface)] md:px-8">
       <div className="mx-auto mb-4 flex w-full max-w-7xl justify-end">
         <button
           type="button"

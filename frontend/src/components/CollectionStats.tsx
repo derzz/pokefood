@@ -15,8 +15,8 @@ interface StatRowProps {
 
 const StatRow: React.FC<StatRowProps> = ({ label, value }) => (
   <div className="flex items-baseline justify-between gap-2">
-    <span className="text-[10px] text-[var(--color-on-surface-variant)]">{label}</span>
-    <span className="text-[10px] text-[var(--color-on-surface)] tabular-nums">{value}</span>
+    <span className="text-[10px] text-black/70">{label}</span>
+    <span className="text-[10px] text-black tabular-nums">{value}</span>
   </div>
 )
 
@@ -49,20 +49,20 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({
   const winRate = totalBattles > 0 ? Math.round((battlesWon / totalBattles) * 100) : 0
 
   return (
-    <div className="flex max-h-64 flex-col rounded-2xl border border-[var(--color-outline)] bg-[var(--color-surface-container)]">
-      <div className="shrink-0 border-b border-[var(--color-outline)] px-6 py-4">
-        <h2 className="text-sm text-[var(--color-on-surface)]">Stats</h2>
+    <div className="flex max-h-64 flex-col rounded-2xl border border-dashed border-black/40 bg-[#f5f0e8]/40">
+      <div className="shrink-0 border-b border-black/20 px-6 py-4">
+        <h2 className="text-sm text-black">Stats</h2>
       </div>
       <div className="flex flex-col gap-4 overflow-y-auto px-6 py-4 scrollbar-thin">{/* scrollable body */}
 
       <div className="space-y-1.5">
-        <p className="text-[9px] uppercase tracking-widest text-[var(--color-primary)]">Collection</p>
+        <p className="text-[9px] uppercase tracking-widest text-black/50">Collection</p>
         <StatRow label="Total Cards" value={total} />
         <StatRow label="Collection Power" value={collectionPower} />
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[9px] uppercase tracking-widest text-[var(--color-primary)]">By Rarity</p>
+        <p className="text-[9px] uppercase tracking-widest text-black/50">By Rarity</p>
         <StatRow label="Common" value={byRarity.Common} />
         <StatRow label="Rare" value={byRarity.Rare} />
         <StatRow label="Epic" value={byRarity.Epic} />
@@ -70,20 +70,20 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[9px] uppercase tracking-widest text-[var(--color-primary)]">By Type</p>
+        <p className="text-[9px] uppercase tracking-widest text-black/50">By Type</p>
         <StatRow label="Meat" value={byType.Meat} />
         <StatRow label="Grains" value={byType.Grains} />
         <StatRow label="Fruits & Veg" value={byType['Fruits & Veg']} />
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[9px] uppercase tracking-widest text-[var(--color-primary)]">Champions</p>
+        <p className="text-[9px] uppercase tracking-widest text-black/50">Champions</p>
         <StatRow label="Strongest (ATK)" value={strongest ? strongest.name : '—'} />
         <StatRow label="Toughest (HP)" value={toughest ? toughest.name : '—'} />
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[9px] uppercase tracking-widest text-[var(--color-primary)]">Battle Record</p>
+        <p className="text-[9px] uppercase tracking-widest text-black/50">Battle Record</p>
         <StatRow label="Won" value={battlesWon} />
         <StatRow label="Lost" value={battlesLost} />
         <StatRow label="Win Rate" value={totalBattles > 0 ? `${winRate}%` : '—'} />

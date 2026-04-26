@@ -74,8 +74,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8">
       <header className="space-y-3 text-center">
-        <h1 className="text-3xl text-[var(--color-on-surface)] md:text-5xl">Pokefood</h1>
-        <p className="text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+        <h1
+          className="text-5xl text-black md:text-7xl"
+          style={{ WebkitTextStroke: '3px white', paintOrder: 'stroke fill' }}
+        >Pokefood</h1>
+        <p className="text-xs text-black/70 md:text-sm">
           Collect delicious Pokefood from your meals
         </p>
       </header>
@@ -91,8 +94,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg text-[var(--color-on-surface)] md:text-xl">Your Collection</h2>
-          <div className="flex items-center gap-1 rounded-lg border border-[var(--color-outline)] bg-[var(--color-surface-container)] p-1">
+<div className="flex items-center gap-1 rounded-lg border border-[var(--color-outline)] bg-[var(--color-surface-container)] p-1">
             {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
