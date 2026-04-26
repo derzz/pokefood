@@ -76,9 +76,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <header className="space-y-3 text-center">
         <h1
           className="text-5xl text-black md:text-7xl"
-          style={{ WebkitTextStroke: '3px white', paintOrder: 'stroke fill' }}
+          style={{
+            WebkitTextStroke: '3px rgba(255, 255, 255, 0.95)',
+            paintOrder: 'stroke fill',
+            textShadow: '0 3px 10px rgba(255, 255, 255, 0.45)',
+          }}
         >Pokefood</h1>
-        <p className="text-xs text-black/70 md:text-sm">
+        <p className="text-xs text-black md:text-sm" style={{ textShadow: '0 2px 8px rgba(255, 255, 255, 0.5)' }}>
           Collect delicious Pokefood from your meals
         </p>
       </header>

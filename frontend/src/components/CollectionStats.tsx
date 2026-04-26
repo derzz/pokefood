@@ -49,7 +49,7 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({
   const winRate = totalBattles > 0 ? Math.round((battlesWon / totalBattles) * 100) : 0
 
   return (
-    <div className="flex max-h-64 flex-col rounded-2xl border border-dashed border-black/40 bg-[#f5f0e8]/40">
+    <div className="flex max-h-64 flex-col rounded-2xl border border-dashed border-black/40 bg-[#f5f0e8]/70">
       <div className="shrink-0 border-b border-black/20 px-6 py-4">
         <h2 className="text-sm text-black">Stats</h2>
       </div>

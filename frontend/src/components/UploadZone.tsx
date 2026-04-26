@@ -40,8 +40,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, isLoading 
     <div
       className={`rounded-2xl border-2 border-dashed p-8 text-center transition md:p-12 ${
         isDragActive
-          ? 'border-black/60 bg-black/10'
-          : 'border-black/40 bg-[#f5f0e8]/40'
+          ? 'border-black/60 bg-[#f5f0e8]/80'
+          : 'border-black/40 bg-[#f5f0e8]/70'
       }`}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
