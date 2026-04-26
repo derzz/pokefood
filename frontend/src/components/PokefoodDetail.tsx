@@ -74,6 +74,14 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
   className,
 }) => {
   const statScaleMax = Math.max(pokefood.hp, pokefood.atk, 1)
+  const displayedTypeLabel =
+    pokefood.type === 'fruits_vegetables'
+      ? 'FRUIT/VEGETABLE'
+      : pokefood.type === 'grains'
+        ? 'GRAIN'
+        : pokefood.type === 'meat'
+          ? 'MEAT'
+          : pokefood.type
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 ${className || ''}`}>
@@ -102,7 +110,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <RarityBadge rarity={pokefood.rarity} />
                 <span className="rounded-md border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-2 py-1 text-[10px] uppercase tracking-wide text-[var(--color-on-surface-variant)] md:text-xs">
-                  {pokefood.type}
+                  {displayedTypeLabel}
                 </span>
               </div>
             </div>
