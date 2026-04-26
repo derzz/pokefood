@@ -5,7 +5,7 @@ import type {
   BattleMatchSession,
   BattleRoomSnapshot,
   Move,
-  Pokefood,
+  Pokefood, Rarity,
 } from '../types'
 import { StatBar } from '../components/StatBar'
 import { MoveButton } from '../components/MoveButton'
@@ -41,6 +41,13 @@ const MAX_RECONNECT_ATTEMPTS = 4
 const AUTO_EXIT_DELAY_MS = 1600
 const BATTLE_END_ANIMATION_MS = 900
 
+const RARITY_LABELS: Record<'common' | 'rare' | 'epic' | 'legendary', Rarity> = {
+  common: 'Common',
+  rare: 'Rare',
+  epic: 'Epic',
+  legendary: 'Legendary',
+}
+
 function toRawBase64(imageUrl: string): string {
   const parts = imageUrl.split(',')
   return parts.length > 1 ? parts[1] : imageUrl
@@ -62,6 +69,7 @@ function buildJoinPayload(pokefood: Pokefood): Record<string, unknown> {
       labels: ['battle'],
       hp: pokefood.hp,
       atk: pokefood.atk,
+      rarity: pokefood.rarity.toLowerCase(),
       type: pokefood.type,
       moves: pokefood.moves.map((move) => ({
         name: move.name,
@@ -87,6 +95,15 @@ function spriteClasses(side: 'player' | 'opponent', phase: BattleAnimationPhase)
     if (phase === 'player-attack') return 'battle-sprite--recoil-right'
   }
   return ''
+}
+
+function toDisplayRarity(value: unknown): Rarity {
+  if (typeof value !== 'string') {
+    return 'Common'
+  }
+
+  const normalized = value.trim().toLowerCase() as keyof typeof RARITY_LABELS
+  return RARITY_LABELS[normalized] ?? 'Common'
 }
 
 export const BattleScreen: React.FC<BattleScreenProps> = ({
@@ -357,6 +374,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
   const typeIconSelf = getTypeIcon(playerPokefood.type)
   const typeIconOpponent = getTypeIcon(opponentSnapshot?.pokefood?.type || '')
+  const opponentDisplayRarity = toDisplayRarity(opponentSnapshot?.pokefood?.rarity)
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4">
@@ -404,7 +422,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="space-y-1">
               <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{displayedOpponentName}</h3>
-              <RarityBadge rarity="Common" />
+              <RarityBadge rarity={opponentDisplayRarity} />
               {typeIconOpponent ? (
                   <InlineIcon
                       src={typeIconOpponent?.src}

@@ -61,6 +61,7 @@ export interface BattlePlayerSnapshot {
     image_base64: string
     labels: string[]
     hp: number
+    rarity: 'common' | 'rare' | 'epic' | 'legendary'
     type: FoodType
     moves: Array<{
       name: string
