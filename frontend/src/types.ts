@@ -1,4 +1,4 @@
-export type FoodType = 'Fruit' | 'Vegetable' | 'Grain' | 'Meat' | 'Junk'
+export { FoodType } from './constants'
 
 export type Rarity = 'Common' | 'Rare' | 'Epic' | 'Legendary'
 
@@ -58,7 +58,7 @@ export interface BattlePlayerSnapshot {
     image_base64: string
     labels: string[]
     hp: number
-    type: 'fruits_vegetables' | 'meat' | 'grains' | 'fruveg' | 'grain'
+    type: FoodType
     moves: Array<{
       name: string
       damage: number
