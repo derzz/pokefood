@@ -19,6 +19,7 @@ export interface Pokefood {
   name: string
   imageUrl: string
   pixelArtUrl?: string
+  labels: string[]
   type: FoodType
   variant: FoodVariant
   rarity: Rarity

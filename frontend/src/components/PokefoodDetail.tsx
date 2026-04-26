@@ -3,7 +3,7 @@ import type { Pokefood } from '../types'
 import { RarityBadge } from './RarityBadge'
 import { StatBar } from './StatBar'
 import { InlineIcon } from './Icon'
-import { getNutritionIcon, getTypeIcon, getStatIcon } from '../utils/icons'
+import { getTypeIcon, getStatIcon } from '../utils/icons'
 import { formatDisplayName } from '../utils/format'
 
 interface PokefoodDetailProps {
@@ -19,6 +19,33 @@ interface PokefoodDetailProps {
 interface MoveNameMarqueeProps {
   name: string
   textClassName?: string
+}
+
+type ParsedLabel = {
+  raw: string
+  category: string | null
+  value: string
+}
+
+function formatLabelText(text: string): string {
+  return formatDisplayName(text.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim())
+}
+
+function parseBackendLabel(rawLabel: string): ParsedLabel {
+  const [left, ...rest] = rawLabel.split(':')
+  if (rest.length === 0) {
+    return {
+      raw: rawLabel,
+      category: null,
+      value: formatLabelText(rawLabel),
+    }
+  }
+
+  return {
+    raw: rawLabel,
+    category: formatLabelText(left),
+    value: formatLabelText(rest.join(':')),
+  }
 }
 
 const MoveNameMarquee: React.FC<MoveNameMarqueeProps> = ({ name, textClassName }) => {
@@ -86,6 +113,9 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
   }, [onTransfer, pokefood])
 
   const statScaleMax = Math.max(pokefood.hp, pokefood.atk, 1)
+  const parsedLabels = pokefood.labels
+    .filter((label): label is string => typeof label === 'string' && label.trim().length > 0)
+    .map(parseBackendLabel)
   const displayedTypeLabel =
     pokefood.type === 'fruits_vegetables'
       ? 'FRUIT/VEGETABLE'
@@ -161,49 +191,29 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
           </div>
 
           <div className="rounded-xl bg-[var(--color-surface-container-high)] p-4">
-            <h3 className="mb-3 text-sm text-[var(--color-on-surface)]">Nutrition</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-                {getNutritionIcon('calories') && (
-                  <InlineIcon
-                    src={getNutritionIcon('calories')!.src}
-                    alt="Calories"
-                    size="sm"
-                  />
-                )}
-                <span>Calories: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.calories}</span></span>
+            <h3 className="mb-3 text-sm text-[var(--color-on-surface)]">Battle Intel</h3>
+            {parsedLabels.length > 0 ? (
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {parsedLabels.map((label, idx) => (
+                  <li
+                    key={`${label.raw}-${idx}`}
+                    className="rounded-lg border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-3 py-2"
+                    title={label.value}
+                  >
+                    {label.category && (
+                      <p className="mb-0.5 text-[10px] uppercase tracking-wide text-[var(--color-on-surface-variant)]">
+                        {label.category}
+                      </p>
+                    )}
+                    <MoveNameMarquee name={label.value} textClassName="text-xs text-[var(--color-on-surface)] md:text-sm" />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="rounded-lg border border-dashed border-[var(--color-outline)] bg-[var(--color-surface-container)] px-3 py-4 text-center text-xs text-[var(--color-on-surface-variant)] md:text-sm">
+                No labels detected for this Pokefood.
               </div>
-              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-                {getNutritionIcon('protein') && (
-                  <InlineIcon
-                    src={getNutritionIcon('protein')!.src}
-                    alt="Protein"
-                    size="sm"
-                  />
-                )}
-                <span>Protein: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.protein}g</span></span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-                {getNutritionIcon('carbs') && (
-                  <InlineIcon
-                    src={getNutritionIcon('carbs')!.src}
-                    alt="Carbs"
-                    size="sm"
-                  />
-                )}
-                <span>Carbs: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.carbs}g</span></span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)] md:text-sm">
-                {getNutritionIcon('fat') && (
-                  <InlineIcon
-                    src={getNutritionIcon('fat')!.src}
-                    alt="Fat"
-                    size="sm"
-                  />
-                )}
-                <span>Fat: <span className="text-[var(--color-on-surface)]">{pokefood.nutritionInfo.fat}g</span></span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

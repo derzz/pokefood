@@ -249,6 +249,7 @@ function mapBackendPokefoodToFrontend(
     id,
     name: source.personal_name || source.name,
     imageUrl: toImageDataUrl(source.image_base64),
+    labels: source.labels,
     type: source.type,
     variant: 'Normal',
     rarity: source.rarity ? (source.rarity.charAt(0).toUpperCase() + source.rarity.slice(1)) as Rarity : 'Common',
