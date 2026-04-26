@@ -48,18 +48,6 @@ function parseBackendLabel(rawLabel: string): ParsedLabel {
   }
 }
 
-function getPokemonDbStyleStatColor(statValue: number): string {
-    const clampedValue = Math.max(1, Math.min(1000, statValue))
-
-    // PokemonDB-inspired tiers using clean, natural 15% bands on a 1-1000 scale.
-    if (clampedValue <= 150) return '#F34444' // Very bad
-    if (clampedValue <= 300) return '#FF7F0F' // Bad
-    if (clampedValue <= 450) return '#FFDD57' // Bad - mediocre
-    if (clampedValue <= 600) return '#A0E515' // Decent - good
-    if (clampedValue <= 750) return '#23CD5E' // Very good
-    return '#2B8CFF' // Phenomenal
-}
-
 const MoveNameMarquee: React.FC<MoveNameMarqueeProps> = ({ name, textClassName }) => {
   const trackRef = useRef<HTMLSpanElement | null>(null)
   const textRef = useRef<HTMLSpanElement | null>(null)
@@ -185,7 +173,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
                                         label="HP"
                                         current={pokefood.hp}
                                         max={statScaleMax}
-                                        color={getPokemonDbStyleStatColor(pokefood.hp)}
+                                        color="#FF6B6B"
                                         iconSrc={getStatIcon('hp')!.src}
                                         iconAlt="Health Points"
                                         showMax={false}
@@ -196,7 +184,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
                                         label="ATK"
                                         current={pokefood.atk}
                                         max={statScaleMax}
-                                        color={getPokemonDbStyleStatColor(pokefood.atk)}
+                                        color="#FFA500"
                                         iconSrc={getStatIcon('atk')!.src}
                                         iconAlt="Attack Power"
                                         showMax={false}
