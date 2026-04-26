@@ -28,5 +28,5 @@ class MatchmakeResponse(BaseModel):
     room_id: str
     player_id: str
     opponent_id: str
-    mode: Literal["mock"] = "mock"
+    mode: Literal["mock", "matched"] = "matched"
 

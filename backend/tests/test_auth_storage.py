@@ -1,4 +1,5 @@
 import uuid
+import os
 
 from fastapi.testclient import TestClient
 
@@ -7,6 +8,10 @@ from app.main import app
 client = TestClient(app)
 
 TEST_IMAGE_BASE64 = "aGVsbG8="
+DUMMY_ACCOUNT_1_EMAIL = os.getenv("DUMMY_ACCOUNT_1_EMAIL", "test1@example.com").strip().lower()
+DUMMY_ACCOUNT_1_PASSWORD = os.getenv("DUMMY_ACCOUNT_1_PASSWORD", "secret123")
+DUMMY_ACCOUNT_2_EMAIL = os.getenv("DUMMY_ACCOUNT_2_EMAIL", "test2@example.com").strip().lower()
+DUMMY_ACCOUNT_2_PASSWORD = os.getenv("DUMMY_ACCOUNT_2_PASSWORD", "secret123")
 
 
 def _register_and_login() -> tuple[str, str]:
@@ -82,4 +87,19 @@ def test_auth_required_for_pokefood_creation() -> None:
         json={"image_base64": TEST_IMAGE_BASE64},
     )
     assert response.status_code == 401
+
+
+def test_dummy_accounts_exist_on_startup() -> None:
+    login_1 = client.post(
+        "/api/v1/auth/login",
+        json={"email": DUMMY_ACCOUNT_1_EMAIL, "password": DUMMY_ACCOUNT_1_PASSWORD},
+    )
+    assert login_1.status_code == 200
+
+    login_2 = client.post(
+        "/api/v1/auth/login",
+        json={"email": DUMMY_ACCOUNT_2_EMAIL, "password": DUMMY_ACCOUNT_2_PASSWORD},
+    )
+    assert login_2.status_code == 200
+
 

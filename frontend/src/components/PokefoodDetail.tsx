@@ -8,7 +8,8 @@ import { getNutritionIcon, getTypeIcon, getStatIcon } from '../utils/icons'
 interface PokefoodDetailProps {
   pokefood: Pokefood
   onClose: () => void
-  onBattle?: (pokefood: Pokefood) => void
+  onBattle?: (pokefood: Pokefood) => void | Promise<void>
+  isBattleLoading?: boolean
   className?: string
 }
 
@@ -69,6 +70,7 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
   pokefood,
   onClose,
   onBattle,
+  isBattleLoading = false,
   className,
 }) => {
   const statScaleMax = Math.max(pokefood.hp, pokefood.atk, 1)
@@ -76,7 +78,11 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 ${className || ''}`}>
       <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] p-6 shadow-xl md:p-8">
-      <button className="absolute right-3 top-3 h-9 w-9 rounded-md border border-[var(--color-outline)] text-lg text-[var(--color-on-surface-variant)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]" onClick={onClose}>
+      <button
+        className="absolute right-3 top-3 h-9 w-9 rounded-md border border-[var(--color-outline)] text-lg text-[var(--color-on-surface-variant)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={onClose}
+        disabled={isBattleLoading}
+      >
         ×
       </button>
 
@@ -204,8 +210,17 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
         </div>
 
         {onBattle && (
-          <button className="w-full rounded-xl bg-[var(--color-primary)] px-4 py-3 text-xs text-[var(--color-on-primary)] transition hover:brightness-110 md:text-sm" onClick={() => onBattle(pokefood)}>
-            Battle
+          <button
+            className="w-full rounded-xl bg-[var(--color-primary)] px-4 py-3 text-xs text-[var(--color-on-primary)] transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80 md:text-sm"
+            onClick={() => void onBattle(pokefood)}
+            disabled={isBattleLoading}
+          >
+            <span className="inline-flex items-center gap-2">
+              {isBattleLoading && (
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              {isBattleLoading ? 'Finding match...' : 'Battle'}
+            </span>
           </button>
         )}
         </div>

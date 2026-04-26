@@ -10,6 +10,22 @@ const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
 const ACCESS_TOKEN_KEY = 'pokefood.accessToken'
 const USER_ID_KEY = 'pokefood.userId'
 
+function readSessionValue(key: string): string | null {
+  return sessionStorage.getItem(key)
+}
+
+function writeSessionValue(key: string, value: string): void {
+  sessionStorage.setItem(key, value)
+}
+
+function clearAuthStorage(): void {
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY)
+  sessionStorage.removeItem(USER_ID_KEY)
+  // Clear legacy shared-tab storage values so tabs can fully diverge after this release.
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(USER_ID_KEY)
+}
+
 type BackendMove = {
   name: string
   damage: number
@@ -38,11 +54,11 @@ type BackendStoredPokefood = {
 }
 
 function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
+  return readSessionValue(ACCESS_TOKEN_KEY)
 }
 
 export function getCurrentUserId(): string {
-  return localStorage.getItem(USER_ID_KEY) || 'current-user'
+  return readSessionValue(USER_ID_KEY) || 'current-user'
 }
 
 type BackendLoginResponse = {
@@ -101,8 +117,8 @@ export async function login(email: string, password: string): Promise<void> {
   }
 
   const payload = (await response.json()) as BackendLoginResponse
-  localStorage.setItem(ACCESS_TOKEN_KEY, payload.access_token)
-  localStorage.setItem(USER_ID_KEY, email)
+  writeSessionValue(ACCESS_TOKEN_KEY, payload.access_token)
+  writeSessionValue(USER_ID_KEY, email)
 }
 
 export async function devLogin(email?: string): Promise<void> {
@@ -119,13 +135,12 @@ export async function devLogin(email?: string): Promise<void> {
   }
 
   const payload = (await response.json()) as BackendDevLoginResponse
-  localStorage.setItem(ACCESS_TOKEN_KEY, payload.access_token)
-  localStorage.setItem(USER_ID_KEY, resolvedEmail)
+  writeSessionValue(ACCESS_TOKEN_KEY, payload.access_token)
+  writeSessionValue(USER_ID_KEY, resolvedEmail)
 }
 
 export function logout(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(USER_ID_KEY)
+  clearAuthStorage()
 }
 
 export function isAuthenticated(): boolean {
@@ -172,7 +187,7 @@ function buildAuthHeaders(): HeadersInit {
   const token = getAccessToken()
 
   if (!token) {
-    throw new Error('No access token found. Save a token in localStorage under "pokefood.accessToken".')
+    throw new Error('No access token found. Sign in again in this tab to create a tab-scoped session.')
   }
 
   return {

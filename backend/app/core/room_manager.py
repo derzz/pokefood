@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 import random
 import uuid
+from collections import deque
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Deque, Dict, Literal, Optional, cast
 
 from fastapi import WebSocket
 
 from models.battle import BattleRoomSnapshot, PlayerSnapshot
-from models import Pokefood
+from models.pokefood import Move, Pokefood
 
 
 class RoomError(Exception):
@@ -36,14 +37,23 @@ class PlayerState:
 class RoomState:
     room_id: str
     players: Dict[str, PlayerState] = field(default_factory=dict)
-    status: str = "waiting"
+    status: Literal["waiting", "in_progress", "finished"] = "waiting"
     turn_player_id: Optional[str] = None
+
+
+@dataclass
+class PendingMatchRequest:
+    player_id: str
+    future: asyncio.Future[dict[str, str]]
+    loop: asyncio.AbstractEventLoop
 
 
 class RoomManager:
     def __init__(self):
         self.rooms: Dict[str, RoomState] = {}
         self._lock = asyncio.Lock()
+        self._waiting_match_requests: Deque[PendingMatchRequest] = deque()
+        self._waiting_match_requests_by_player: Dict[str, PendingMatchRequest] = {}
 
     async def connect(self, room_id: str, player_id: str, websocket: WebSocket) -> None:
         async with self._lock:
@@ -84,30 +94,99 @@ class RoomManager:
             elif room.status == "in_progress":
                 room.status = "finished"
 
-    async def create_mock_match(self, player_id: str) -> dict[str, str]:
+    async def matchmake(self, player_id: str) -> dict[str, str]:
+        loop = asyncio.get_running_loop()
+        match_future = None
+        response = None
+
         async with self._lock:
-            room_id = f"room-{uuid.uuid4().hex[:12]}"
-            bot_id = f"mock-{uuid.uuid4().hex[:8]}"
-            bot_pokefood = self._generate_mock_pokefood()
+            # 1. Check if already in a room
+            existing_room = self._find_room_for_player_locked(player_id)
+            if existing_room is not None:
+                return self._matchmake_response_for_player_locked(existing_room, player_id)
 
-            self.rooms[room_id] = RoomState(
-                room_id=room_id,
-                players={
-                    player_id: PlayerState(),
-                    bot_id: PlayerState(
-                        ready=True,
-                        pokefood=bot_pokefood,
-                        current_hp=bot_pokefood.hp,
-                        is_bot=True,
-                    ),
-                },
-            )
+            # 2. Check if already waiting
+            existing_request = self._waiting_match_requests_by_player.get(player_id)
+            if existing_request is not None:
+                match_future = existing_request.future
+            else:
+                # 3. Try to match with someone in queue
+                while self._waiting_match_requests:
+                    waiting_request = self._waiting_match_requests.popleft()
+                    self._waiting_match_requests_by_player.pop(waiting_request.player_id, None)
 
-            return {
-                "room_id": room_id,
-                "player_id": player_id,
-                "opponent_id": bot_id,
-            }
+                    if waiting_request.future.done():
+                        continue
+
+                    room_id = f"room-{uuid.uuid4().hex[:12]}"
+                    self.rooms[room_id] = RoomState(
+                        room_id=room_id,
+                        players={
+                            waiting_request.player_id: PlayerState(),
+                            player_id: PlayerState(),
+                        },
+                    )
+
+                    # Prepare response for the current player
+                    response = {
+                        "room_id": room_id,
+                        "player_id": player_id,
+                        "opponent_id": waiting_request.player_id,
+                    }
+
+                    # Signal the waiting player
+                    waiting_response = {
+                        "room_id": room_id,
+                        "player_id": waiting_request.player_id,
+                        "opponent_id": player_id,
+                    }
+                    waiting_request.future.set_result(waiting_response)
+
+                    # Break out of the lock before returning
+                    break
+
+                    # 4. If no match found, become the waiting player
+                if response is None and match_future is None:
+                    match_future = loop.create_future()
+                    pending_request = PendingMatchRequest(player_id=player_id, future=match_future, loop=loop)
+                    self._waiting_match_requests.append(pending_request)
+                    self._waiting_match_requests_by_player[player_id] = pending_request
+
+        # --- LOCK RELEASED HERE ---
+
+        if response:
+            return response
+
+        try:
+            return await match_future
+        except asyncio.CancelledError:
+            async with self._lock:
+                current_request = self._waiting_match_requests_by_player.pop(player_id, None)
+                if current_request is not None:
+                    try:
+                        self._waiting_match_requests.remove(current_request)
+                    except ValueError:
+                        pass
+            raise
+
+    async def create_mock_match(self, player_id: str) -> dict[str, str]:
+        return await self.matchmake(player_id=player_id)
+
+    def _find_room_for_player_locked(self, player_id: str) -> Optional[RoomState]:
+        for room in self.rooms.values():
+            if player_id in room.players:
+                return room
+        return None
+
+    def _matchmake_response_for_player_locked(self, room: RoomState, player_id: str) -> dict[str, str]:
+        opponent_id = next((pid for pid in room.players if pid != player_id), None)
+        if opponent_id is None:
+            raise RoomError("opponent not found in room")
+        return {
+            "room_id": room.room_id,
+            "player_id": player_id,
+            "opponent_id": opponent_id,
+        }
 
     async def set_pokefood(self, room_id: str, player_id: str, pokefood: Pokefood) -> None:
         async with self._lock:
@@ -214,6 +293,18 @@ class RoomManager:
                         player.websocket = None
 
     def _generate_mock_pokefood(self) -> Pokefood:
+        burger_moves: list[Move] = [
+            Move.model_validate({"name": "Grease Bash", "damage": 16}),
+            Move.model_validate({"name": "Patty Press", "damage": 12}),
+        ]
+        corn_moves: list[Move] = [
+            Move.model_validate({"name": "Cob Crush", "damage": 15}),
+            Move.model_validate({"name": "Starch Shield", "damage": 10}),
+        ]
+        salad_moves: list[Move] = [
+            Move.model_validate({"name": "Vine Whip", "damage": 14}),
+            Move.model_validate({"name": "Citrus Slice", "damage": 11}),
+        ]
         candidates = [
             Pokefood(
                 personal_name="Byte Burger",
@@ -222,10 +313,7 @@ class RoomManager:
                 labels=["mock", "burger"],
                 hp=74,
                 type="meat",
-                moves=[
-                    {"name": "Grease Bash", "damage": 16},
-                    {"name": "Patty Press", "damage": 12},
-                ],
+                moves=burger_moves,
             ),
             Pokefood(
                 personal_name="Kernel Knight",
@@ -234,10 +322,7 @@ class RoomManager:
                 labels=["mock", "corn"],
                 hp=70,
                 type="grain",
-                moves=[
-                    {"name": "Cob Crush", "damage": 15},
-                    {"name": "Starch Shield", "damage": 10},
-                ],
+                moves=corn_moves,
             ),
             Pokefood(
                 personal_name="Leaf Lancer",
@@ -246,10 +331,7 @@ class RoomManager:
                 labels=["mock", "salad"],
                 hp=68,
                 type="fruveg",
-                moves=[
-                    {"name": "Vine Whip", "damage": 14},
-                    {"name": "Citrus Slice", "damage": 11},
-                ],
+                moves=salad_moves,
             ),
         ]
         return random.choice(candidates)
@@ -286,7 +368,7 @@ class RoomManager:
         }
         return BattleRoomSnapshot(
             room_id=room.room_id,
-            status=room.status,
+            status=cast(Literal["waiting", "in_progress", "finished"], room.status),
             turn_player_id=room.turn_player_id,
             players=players,
         )

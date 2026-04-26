@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/matchmake", response_model=MatchmakeResponse)
-async def create_mock_match(current_user: User = Depends(get_current_user)) -> MatchmakeResponse:
+async def matchmake_players(current_user: User = Depends(get_current_user)) -> MatchmakeResponse:
     player_id = f"user-{current_user.id}"
-    match = await room_manager.create_mock_match(player_id=player_id)
+    match = await room_manager.matchmake(player_id=player_id)
     logger.info(
         "battles.matchmake created",
         extra={"user_id": current_user.id, "room_id": match["room_id"], "opponent_id": match["opponent_id"]},

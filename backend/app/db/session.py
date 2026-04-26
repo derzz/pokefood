@@ -1,12 +1,20 @@
 import os
+import logging
 from collections.abc import Generator
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.models import Base
+from app.db.models import Base, User
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pokefood.db")
+SEED_DUMMY_TEST_ACCOUNTS = os.getenv("SEED_DUMMY_TEST_ACCOUNTS", "true").lower() == "true"
+DUMMY_ACCOUNT_1_EMAIL = os.getenv("DUMMY_ACCOUNT_1_EMAIL", "test1@example.com").strip().lower()
+DUMMY_ACCOUNT_1_PASSWORD = os.getenv("DUMMY_ACCOUNT_1_PASSWORD", "secret123")
+DUMMY_ACCOUNT_2_EMAIL = os.getenv("DUMMY_ACCOUNT_2_EMAIL", "test2@example.com").strip().lower()
+DUMMY_ACCOUNT_2_PASSWORD = os.getenv("DUMMY_ACCOUNT_2_PASSWORD", "secret123")
+
+logger = logging.getLogger(__name__)
 
 engine = create_engine(
     DATABASE_URL,
@@ -33,3 +41,40 @@ def init_db() -> None:
                 with engine.begin() as connection:
                     connection.execute(text("DROP TABLE stored_pokefoods"))
     Base.metadata.create_all(bind=engine)
+    _seed_dummy_accounts()
+
+
+def _seed_dummy_accounts() -> None:
+    if not SEED_DUMMY_TEST_ACCOUNTS:
+        return
+
+    # Import lazily to avoid a circular import path between session and security modules.
+    from app.core.security import hash_password
+
+    configured_accounts = [
+        (DUMMY_ACCOUNT_1_EMAIL, DUMMY_ACCOUNT_1_PASSWORD),
+        (DUMMY_ACCOUNT_2_EMAIL, DUMMY_ACCOUNT_2_PASSWORD),
+    ]
+    accounts = [(email, password) for email, password in configured_accounts if email and password]
+    if not accounts:
+        return
+
+    with SessionLocal() as db:
+        emails = [email for email, _ in accounts]
+        existing_emails = {
+            email
+            for email, in db.execute(
+                select(User.email).where(User.email.in_(emails))
+            )
+        }
+
+        created_emails: list[str] = []
+        for email, password in accounts:
+            if email in existing_emails:
+                continue
+            db.add(User(email=email, password_hash=hash_password(password)))
+            created_emails.append(email)
+
+        if created_emails:
+            db.commit()
+            logger.info("db seeded dummy test accounts", extra={"count": len(created_emails)})

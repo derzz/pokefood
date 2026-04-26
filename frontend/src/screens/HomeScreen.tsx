@@ -7,13 +7,15 @@ import { PokefoodDetail } from '../components/PokefoodDetail'
 interface HomeScreenProps {
   pokefoodCollection: Pokefood[]
   onUploadStart: (file: File) => Promise<void>
-  onNavigateToBattle?: (pokefood: Pokefood) => void
+  onNavigateToBattle?: (pokefood: Pokefood) => void | Promise<void>
+  isMatchmaking?: boolean
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   pokefoodCollection,
   onUploadStart,
   onNavigateToBattle,
+  isMatchmaking = false,
 }) => {
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -54,6 +56,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           pokefood={selectedPokefood}
           onClose={() => setSelectedPokefood(null)}
           onBattle={onNavigateToBattle}
+          isBattleLoading={isMatchmaking}
         />
       )}
     </div>

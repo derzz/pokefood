@@ -12,6 +12,17 @@ uv run uvicorn app.main:app --reload --port 8000
 
 By default, data is persisted in SQLite at `backend/pokefood.db`.
 
+On startup, the backend seeds two dummy test accounts if they do not already exist:
+
+- `test1@example.com` / `secret123`
+- `test2@example.com` / `secret123`
+
+You can override or disable this behavior with environment variables:
+
+- `SEED_DUMMY_TEST_ACCOUNTS=true|false` (default: `true`)
+- `DUMMY_ACCOUNT_1_EMAIL`, `DUMMY_ACCOUNT_1_PASSWORD`
+- `DUMMY_ACCOUNT_2_EMAIL`, `DUMMY_ACCOUNT_2_PASSWORD`
+
 ## Authentication
 
 ### Register

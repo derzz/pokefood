@@ -1,5 +1,7 @@
 import uuid
+import asyncio
 
+import httpx
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -24,8 +26,8 @@ def _pokefood(name: str, personal_name: str, hp: int, pokefood_type: str) -> dic
     }
 
 
-def _auth_headers() -> dict[str, str]:
-    email = f"test-{uuid.uuid4().hex[:8]}@example.com"
+def _auth_headers(email: str | None = None) -> dict[str, str]:
+    email = email or f"test-{uuid.uuid4().hex[:8]}@example.com"
     password = "secret123"
 
     register = client.post("/api/v1/auth/register", json={"email": email, "password": password})
@@ -79,7 +81,7 @@ def test_websocket_battle_room_flow() -> None:
             ws2.send_json({"type": "ready", "payload": {}})
 
             got_in_progress = False
-            for _ in range(8):
+            for _ in range(12):
                 msg = ws1.receive_json()
                 if msg.get("type") == "state_update" and msg.get("payload", {}).get("status") == "in_progress":
                     got_in_progress = True
@@ -88,7 +90,7 @@ def test_websocket_battle_room_flow() -> None:
 
             ws1.send_json({"type": "action", "payload": {"move": "Chop"}})
             saw_action_result = False
-            for _ in range(6):
+            for _ in range(8):
                 msg = ws1.receive_json()
                 if msg.get("type") == "action_result":
                     saw_action_result = True
@@ -98,53 +100,30 @@ def test_websocket_battle_room_flow() -> None:
             assert saw_action_result
 
 
-def test_matchmake_with_mock_opponent_via_websocket() -> None:
-    headers = _auth_headers()
-    matchmake = client.post("/api/v1/battles/matchmake", headers=headers)
-    assert matchmake.status_code == 200
+def test_matchmake_pairs_two_waiting_users() -> None:
+    headers_a = _auth_headers(email=f"match-a-{uuid.uuid4().hex[:8]}@example.com")
+    headers_b = _auth_headers(email=f"match-b-{uuid.uuid4().hex[:8]}@example.com")
 
-    payload = matchmake.json()
-    room_id = payload["room_id"]
-    player_id = payload["player_id"]
-    opponent_id = payload["opponent_id"]
-    assert payload["mode"] == "mock"
+    async def _create_matches() -> tuple[httpx.Response, httpx.Response]:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as async_client:
+            return await asyncio.gather(
+                async_client.post("/api/v1/battles/matchmake", headers=headers_a),
+                async_client.post("/api/v1/battles/matchmake", headers=headers_b),
+            )
 
-    with client.websocket_connect(f"/ws/battle/{room_id}?player_id={player_id}") as ws:
-        ws.send_json(
-            {
-                "type": "join",
-                "payload": {
-                    "pokefood": _pokefood(name="toast", personal_name="Toast Titan", hp=66, pokefood_type="grain")
-                },
-            }
-        )
-        ws.send_json({"type": "ready", "payload": {}})
+    match_a, match_b = asyncio.run(_create_matches())
 
-        got_opponent = False
-        got_in_progress = False
-        for _ in range(10):
-            msg = ws.receive_json()
-            if msg.get("type") != "state_update":
-                continue
-            state = msg.get("payload", {})
-            if opponent_id in state.get("players", {}) and state["players"][opponent_id].get("pokefood"):
-                got_opponent = True
-            if state.get("status") == "in_progress":
-                got_in_progress = True
-                break
+    assert match_a.status_code == 200
+    assert match_b.status_code == 200
 
-        assert got_opponent
-        assert got_in_progress
+    payload_a = match_a.json()
+    payload_b = match_b.json()
+    assert payload_a["mode"] == "matched"
+    assert payload_b["mode"] == "matched"
+    assert payload_a["room_id"] == payload_b["room_id"]
+    assert payload_a["player_id"] == payload_b["opponent_id"]
+    assert payload_b["player_id"] == payload_a["opponent_id"]
 
-        ws.send_json({"type": "action", "payload": {"move": "Chop"}})
-        saw_result = False
-        for _ in range(8):
-            msg = ws.receive_json()
-            if msg.get("type") == "action_result":
-                saw_result = True
-                assert msg["payload"]["damage"] >= 1
-                break
-
-        assert saw_result
 
 
