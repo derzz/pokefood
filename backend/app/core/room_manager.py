@@ -10,17 +10,18 @@ from typing import Deque, Dict, Literal, Optional, cast
 from fastapi import WebSocket
 
 from models.battle import BattleRoomSnapshot, PlayerSnapshot
+from models.constants import FoodType
 from models.pokefood import Move, Pokefood
 
 
 class RoomError(Exception):
     pass
 
-# Simple type advantage system: fruveg > meat > grain > ...
+# Simple type advantage system: fruits_vegetables > meat > grains > ...
 TYPE_ADVANTAGE = {
-    "fruveg": "meat",
-    "meat": "grain",
-    "grain": "fruveg",
+    FoodType.FRUITS_VEGETABLES: FoodType.MEAT,
+    FoodType.MEAT: FoodType.GRAINS,
+    FoodType.GRAINS: FoodType.FRUITS_VEGETABLES,
 }
 
 
@@ -312,7 +313,7 @@ class RoomManager:
                 image_base64="aGVsbG8=",
                 labels=["mock", "burger"],
                 hp=74,
-                type="meat",
+                type=FoodType.MEAT,
                 moves=burger_moves,
             ),
             Pokefood(
@@ -321,7 +322,7 @@ class RoomManager:
                 image_base64="aGVsbG8=",
                 labels=["mock", "corn"],
                 hp=70,
-                type="grain",
+                type=FoodType.GRAINS,
                 moves=corn_moves,
             ),
             Pokefood(
@@ -330,7 +331,7 @@ class RoomManager:
                 image_base64="aGVsbG8=",
                 labels=["mock", "salad"],
                 hp=68,
-                type="fruveg",
+                type=FoodType.FRUITS_VEGETABLES,
                 moves=salad_moves,
             ),
         ]

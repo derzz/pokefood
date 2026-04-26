@@ -1,8 +1,6 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
-FoodType = Literal["meat", "grains", "fruits_vegetables"]
+from models.constants import FoodType
 
 
 class FoodCategory(BaseModel):
@@ -74,5 +72,5 @@ class CategoryLabel(BaseModel):
 class FoodLabelResult(BaseModel):
     name: str = Field(description="The name of the food item")
     description: str = Field(description="A brief description of the food item")
-    type: FoodType = Field(description="Primary food type: 'meat', 'grains', or 'fruits_vegetables'")
+    type: FoodType = Field(description=f"Primary food type: {', '.join(repr(t.value) for t in FoodType)}")
     labels: list[CategoryLabel] = Field(description="One entry per category in the schema")

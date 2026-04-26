@@ -7,6 +7,8 @@ from pathlib import Path
 
 import httpx
 
+from models.constants import FoodType
+
 BASE = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72"
 
 # Codepoints map to 72x72 color PNG emoji
@@ -21,9 +23,9 @@ ICONS: dict[str, dict[str, str]] = {
         "prep_time": f"{BASE}/23f3.png",            # ⏳ hourglass
     },
     "types": {
-        "meat": f"{BASE}/1f969.png",                # 🥩 cut of meat
-        "grains": f"{BASE}/1f33e.png",              # 🌾 sheaf of rice
-        "fruits_vegetables": f"{BASE}/1f966.png",   # 🥦 broccoli
+        FoodType.MEAT: f"{BASE}/1f969.png",                # 🥩 cut of meat
+        FoodType.GRAINS: f"{BASE}/1f33e.png",              # 🌾 sheaf of rice
+        FoodType.FRUITS_VEGETABLES: f"{BASE}/1f966.png",   # 🥦 broccoli
     },
 }
 
