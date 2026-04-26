@@ -8,6 +8,8 @@ import { FoodType } from './constants'
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
+const API_POKEFOODS_BASE_PATH = '/api/v1/pokefoods'
+const API_POKEFOODS_GET_ALL_PATH = `${API_POKEFOODS_BASE_PATH}/all`
 const ACCESS_TOKEN_KEY = 'pokefood.accessToken'
 const USER_ID_KEY = 'pokefood.userId'
 
@@ -270,7 +272,7 @@ function fileToBase64(file: File): Promise<string> {
 export async function uploadFoodImage(file: File): Promise<Pokefood> {
   const imageBase64 = await fileToBase64(file)
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/pokefoods/from-image`, {
+  const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_BASE_PATH}/from-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -301,7 +303,7 @@ export async function uploadFoodImage(file: File): Promise<Pokefood> {
  * Get all user's Pokefood collection
  */
 export async function getUserCollection(userId: string): Promise<Pokefood[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/pokefoods`, {
+  const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_GET_ALL_PATH}`, {
     headers: {
       ...buildAuthHeaders(),
     },
