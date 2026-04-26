@@ -17,9 +17,10 @@ interface PokefoodDetailProps {
 
 interface MoveNameMarqueeProps {
   name: string
+  textClassName?: string
 }
 
-const MoveNameMarquee: React.FC<MoveNameMarqueeProps> = ({ name }) => {
+const MoveNameMarquee: React.FC<MoveNameMarqueeProps> = ({ name, textClassName }) => {
   const trackRef = useRef<HTMLSpanElement | null>(null)
   const textRef = useRef<HTMLSpanElement | null>(null)
   const [overflowDistance, setOverflowDistance] = useState(0)
@@ -56,7 +57,7 @@ const MoveNameMarquee: React.FC<MoveNameMarqueeProps> = ({ name }) => {
     <span ref={trackRef} className="move-name-marquee-track">
       <span
         ref={textRef}
-        className={`move-name-marquee text-[var(--color-on-surface)] ${overflowDistance > 0 ? 'move-name-marquee--animate' : ''}`}
+        className={`move-name-marquee text-[var(--color-on-surface)] ${overflowDistance > 0 ? 'move-name-marquee--animate' : ''} ${textClassName || ''}`}
         style={{
           ['--marquee-distance' as string]: `${overflowDistance}px`,
           ['--marquee-duration' as string]: `${durationSeconds}s`,
@@ -116,7 +117,9 @@ export const PokefoodDetail: React.FC<PokefoodDetailProps> = ({
             </div>
 
             <div className="min-w-0 flex-1 space-y-2">
-              <h2 className="truncate text-xl text-[var(--color-on-surface)] md:text-2xl">{pokefood.name}</h2>
+              <h2 className="min-w-0 text-xl text-[var(--color-on-surface)] md:text-2xl">
+                <MoveNameMarquee name={pokefood.name} textClassName="text-xl md:text-2xl" />
+              </h2>
               <div className="flex flex-wrap items-center gap-2">
                 <RarityBadge rarity={pokefood.rarity} />
                 <span className="rounded-md border border-[var(--color-outline)] bg-[var(--color-surface-container)] px-2 py-1 text-[10px] uppercase tracking-wide text-[var(--color-on-surface-variant)] md:text-xs">
