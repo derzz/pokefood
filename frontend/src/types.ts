@@ -7,7 +7,7 @@ export type FoodVariant = 'Normal' | 'Garnished' | 'Healthy'
 export interface Move {
   id: string
   name: string
-  type: FoodType
+  effectiveType: FoodType[]
   power: number
   mpCost: number
   accuracy: number

@@ -229,7 +229,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           setBattleLog((prev) => [
             ...prev,
             `${result.attacker_id} used ${result.move}!`,
-            `${result.defender_id} took ${result.damage} damage.`,
+              (result.type_multiplier > 0 ? `It was effective (x${result.type_multiplier})! ${result.defender_id} took ${result.damage} damage.`
+                  : `${result.defender_id} took ${result.damage} damage.`)
           ])
           return
         }
