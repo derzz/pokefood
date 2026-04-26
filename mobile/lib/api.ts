@@ -4,7 +4,7 @@ import type { BattleMatchSession, Move, Pokefood, Rarity } from './types'
 import { FoodType } from './constants'
 
 const RAW_API_BASE_URL: string =
-  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? 'http://127.0.0.1:8000'
+  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? 'http://172.20.10.14:8000'
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
 const API_POKEFOODS_BASE_PATH = '/api/v1/pokefoods'
 const API_POKEFOODS_GET_ALL_PATH = `${API_POKEFOODS_BASE_PATH}/all`

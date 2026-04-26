@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import {
+  ImageBackground,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -75,52 +76,58 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Pokefood</Text>
-          <Text style={styles.subtitle}>Collect delicious Pokefood from your meals</Text>
-        </View>
-
-        {/* Upload + Stats */}
-        <View style={styles.topSection}>
-          <UploadZone onImagePicked={handleImagePicked} isLoading={isUploading} />
-          <CollectionStats
-            collection={collection}
-            battlesWon={battlesWon}
-            battlesLost={battlesLost}
-          />
-        </View>
-
-        {/* Sort controls */}
-        <View style={styles.sortRow}>
-          <View style={styles.sortBar}>
-            {SORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[
-                  styles.sortBtn,
-                  sortKey === opt.value && styles.sortBtnActive,
-                ]}
-                onPress={() => setSortKey(opt.value)}
-              >
-                <Text
-                  style={[
-                    styles.sortBtnText,
-                    sortKey === opt.value && styles.sortBtnTextActive,
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        <ImageBackground
+          source={require('../../assets/images/bg.png')}
+          style={styles.bgImage}
+          resizeMode="repeat"
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Pokefood</Text>
+            <Text style={styles.subtitle}>Collect delicious Pokefood from your meals</Text>
           </View>
-        </View>
 
-        {/* Grid */}
-        <PokefoodGrid
-          pokefood={sortedCollection}
-          onSelectPokefood={setSelectedPokefood}
-        />
+          {/* Upload + Stats */}
+          <View style={styles.topSection}>
+            <UploadZone onImagePicked={handleImagePicked} isLoading={isUploading} />
+            <CollectionStats
+              collection={collection}
+              battlesWon={battlesWon}
+              battlesLost={battlesLost}
+            />
+          </View>
+
+          {/* Sort controls */}
+          <View style={styles.sortRow}>
+            <View style={styles.sortBar}>
+              {SORT_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[
+                    styles.sortBtn,
+                    sortKey === opt.value && styles.sortBtnActive,
+                  ]}
+                  onPress={() => setSortKey(opt.value)}
+                >
+                  <Text
+                    style={[
+                      styles.sortBtnText,
+                      sortKey === opt.value && styles.sortBtnTextActive,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Grid */}
+          <PokefoodGrid
+            pokefood={sortedCollection}
+            onSelectPokefood={setSelectedPokefood}
+          />
+        </ImageBackground>
       </ScrollView>
 
       {/* Detail modal */}
@@ -155,7 +162,8 @@ const PLACEHOLDER_POKEFOOD: Pokefood = {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: AppColors.surface },
-  container: { padding: 16, gap: 20, paddingBottom: 40 },
+  container: { flexGrow: 1 },
+  bgImage: { padding: 16, gap: 20, paddingBottom: 40 },
   header: { alignItems: 'center', gap: 8 },
   title: { fontSize: 28, color: AppColors.onSurface, fontWeight: 'bold' },
   subtitle: { fontSize: 11, color: AppColors.onSurfaceVariant, textAlign: 'center' },
