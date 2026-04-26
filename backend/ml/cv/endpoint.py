@@ -8,7 +8,7 @@ from PIL import Image
 from .label import Labeler
 from .mllm_client import MLLMClient
 from .model import DEFAULT_FOOD_LABEL_SCHEMA, FoodLabelResult, FoodLabelSchema
-from .separate import remove_background
+from .pixelize import Pixelizer
 from .vision import crop_food_dish
 
 
@@ -24,10 +24,11 @@ async def classify_and_iconify(
     openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
     mllm = MLLMClient(system_prompt="", model="gpt-5.4-mini", client=openai_client)
     labeler = Labeler(mllm)
+    pixelizer = Pixelizer(openai_client)
 
     label_result, icon_bytes = await asyncio.gather(
         labeler.label(schema, cropped, mime=mime),
-        remove_background(cropped),
+        pixelizer.pixelize(cropped),
     )
     return label_result, icon_bytes
 
