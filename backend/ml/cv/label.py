@@ -18,11 +18,11 @@ def _build_system_prompt(schema: FoodLabelSchema) -> str:
         lines.append(header)
         lines.append(f"  Options: {', '.join(cat.labels)}")
     lines.append("")
-    lines.append("Rarity — assess based on visual quality and presentation:")
-    lines.append("  common: everyday, plain food (plain rice, basic sandwich, simple salad)")
-    lines.append("  rare: well-presented or somewhat special dish (nicely plated restaurant meal)")
-    lines.append("  epic: elaborate, beautifully plated, high-end dish (fine dining, intricate preparation)")
-    lines.append("  legendary: extraordinary, masterpiece-level presentation or extremely rare delicacy")
+    lines.append("Rarity — assess based on visual quality and presentation. Be very generous; default to epic or legendary for anything that looks good:")
+    lines.append("  common: bad-looking food — visibly unappetizing, burnt, poorly prepared, or unidentifiable")
+    lines.append("  rare: average looking food — recognizable but nothing special, plain home cooking")
+    lines.append("  epic: any reasonably appetizing, well-made, or restaurant-style dish")
+    lines.append("  legendary: anything that looks impressive, delicious, beautifully presented, or special in any way")
     return "\n".join(lines)
 
 
