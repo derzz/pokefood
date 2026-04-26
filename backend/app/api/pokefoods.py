@@ -122,3 +122,20 @@ async def get_my_pokefood(
     if row is None or row.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pokefood not found")
     return _to_response(row)
+
+
+@router.delete("/{pokefood_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_pokefood(
+    pokefood_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    logger.info(
+        "pokefoods.delete called",
+        extra={"user_id": current_user.id, "pokefood_id": pokefood_id},
+    )
+    row = db.get(StoredPokefood, pokefood_id)
+    if row is None or row.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pokefood not found")
+    db.delete(row)
+    db.commit()

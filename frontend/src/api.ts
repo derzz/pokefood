@@ -341,3 +341,14 @@ export async function getUserCollection(userId: string): Promise<Pokefood[]> {
     ),
   )
 }
+
+export async function deletePokefood(pokefoodId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_BASE_PATH}/${pokefoodId}`, {
+    method: 'DELETE',
+    headers: buildAuthHeaders(),
+  })
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(errorBody || 'Failed to delete Pokefood')
+  }
+}

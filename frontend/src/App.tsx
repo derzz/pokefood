@@ -6,6 +6,7 @@ import { LoginScreen } from './screens/LoginScreen'
 import { RegisterScreen } from "./screens/RegisterScreen"
 import {
   createBattleMatch,
+  deletePokefood,
   devLogin,
   getCurrentUserId,
   getUserCollection,
@@ -14,6 +15,18 @@ import {
   logout, register,
   uploadFoodImage,
 } from './api'
+
+function loadBattleRecord(userId: string) {
+  return {
+    won: parseInt(localStorage.getItem(`pokefood.${userId}.wins`) ?? '0', 10),
+    lost: parseInt(localStorage.getItem(`pokefood.${userId}.losses`) ?? '0', 10),
+  }
+}
+
+function saveBattleRecord(userId: string, won: number, lost: number) {
+  localStorage.setItem(`pokefood.${userId}.wins`, String(won))
+  localStorage.setItem(`pokefood.${userId}.losses`, String(lost))
+}
 
 type AppScreen = 'home' | 'battle'
 
@@ -25,18 +38,28 @@ function App() {
   const [selectedPokefood, setSelectedPokefood] = useState<Pokefood | null>(null)
   const [battleSession, setBattleSession] = useState<BattleMatchSession | null>(null)
   const [isMatchmaking, setIsMatchmaking] = useState(false)
+  const [isTransferring, setIsTransferring] = useState(false)
+  const [battlesWon, setBattlesWon] = useState(0)
+  const [battlesLost, setBattlesLost] = useState(0)
   const matchRequestIdRef = useRef(0)
   const showDevLogin = import.meta.env.DEV
 
   useEffect(() => {
     if (!authenticated) {
       setCollection([])
+      setBattlesWon(0)
+      setBattlesLost(0)
       return
     }
 
+    const userId = getCurrentUserId()
+    const record = loadBattleRecord(userId)
+    setBattlesWon(record.won)
+    setBattlesLost(record.lost)
+
     const loadCollection = async () => {
       try {
-        const fetched = await getUserCollection(getCurrentUserId())
+        const fetched = await getUserCollection(userId)
         setCollection(fetched)
       } catch (e) { console.error(e) }
     }
@@ -104,6 +127,30 @@ function App() {
     }
   }
 
+  const handleTransfer = async (pokefood: Pokefood) => {
+    setIsTransferring(true)
+    try {
+      await deletePokefood(pokefood.id)
+      setCollection((prev) => prev.filter((p) => p.id !== pokefood.id))
+    } catch (error) {
+      console.error('Transfer failed:', error)
+    } finally {
+      setIsTransferring(false)
+    }
+  }
+
+  const handleBattleResult = (result: 'win' | 'loss') => {
+    const userId = getCurrentUserId()
+    const current = loadBattleRecord(userId)
+    const next = {
+      won: current.won + (result === 'win' ? 1 : 0),
+      lost: current.lost + (result === 'loss' ? 1 : 0),
+    }
+    saveBattleRecord(userId, next.won, next.lost)
+    setBattlesWon(next.won)
+    setBattlesLost(next.lost)
+  }
+
   const handleExitBattle = () => {
     setScreen('home')
     setSelectedPokefood(null)
@@ -125,7 +172,7 @@ function App() {
 
   if (screen === 'battle' && selectedPokefood && battleSession) {
     return (
-      <main className="min-h-screen bg-[var(--color-surface)] px-4 py-6 text-[var(--color-on-surface)] md:px-8">
+      <main className="min-h-screen bg-[var(--color-surface)] bg-[url('/bg.png')] bg-cover bg-bottom px-4 py-6 text-[var(--color-on-surface)] md:px-8">
         <div className="mx-auto mb-4 flex w-full max-w-6xl justify-end">
           <button
             type="button"
@@ -139,13 +186,14 @@ function App() {
           playerPokefood={selectedPokefood}
           matchSession={battleSession}
           onExit={handleExitBattle}
+          onBattleResult={handleBattleResult}
         />
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-surface)] px-4 py-6 text-[var(--color-on-surface)] md:px-8">
+    <main className="min-h-screen bg-[var(--color-surface)] bg-[url('/bg.png')] bg-cover bg-bottom px-4 py-6 text-[var(--color-on-surface)] md:px-8">
       <div className="mx-auto mb-4 flex w-full max-w-7xl justify-end">
         <button
           type="button"
@@ -160,6 +208,10 @@ function App() {
         onUploadStart={handleUploadStart}
         onNavigateToBattle={handleNavigateToBattle}
         isMatchmaking={isMatchmaking}
+        onTransfer={handleTransfer}
+        isTransferring={isTransferring}
+        battlesWon={battlesWon}
+        battlesLost={battlesLost}
       />
     </main>
   )

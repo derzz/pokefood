@@ -40,8 +40,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, isLoading 
     <div
       className={`rounded-2xl border-2 border-dashed p-8 text-center transition md:p-12 ${
         isDragActive
-          ? 'border-[var(--color-primary)] bg-[color-mix(in_oklab,var(--color-primary)_20%,transparent)]'
-          : 'border-[var(--color-outline)] bg-[var(--color-surface-container)]'
+          ? 'border-black/60 bg-black/10'
+          : 'border-black/40 bg-[#f5f0e8]/40'
       }`}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
@@ -58,11 +58,11 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, isLoading 
       />
       <label htmlFor="file-input" className="block w-full cursor-pointer">
         <div className="space-y-3">
-          <h2 className="text-lg leading-tight text-[var(--color-on-surface)] md:text-xl">Upload Food Photo</h2>
-          <p className="text-xs leading-relaxed text-[var(--color-on-surface-variant)] md:text-sm">
+          <h2 className="text-lg leading-tight text-black md:text-xl">Upload Food Photo</h2>
+          <p className="text-xs leading-relaxed text-black/70 md:text-sm">
             Drag and drop your food image here or click to select
           </p>
-          {isLoading && <p className="text-xs text-[var(--color-primary)] md:text-sm">Processing...</p>}
+          {isLoading && <p className="text-xs text-black md:text-sm">Processing...</p>}
         </div>
       </label>
     </div>
