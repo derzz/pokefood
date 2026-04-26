@@ -1,3 +1,5 @@
+import type {FoodType} from "./constants.ts";
+
 export { FoodType } from './constants'
 
 export type Rarity = 'Common' | 'Rare' | 'Epic' | 'Legendary'
@@ -9,6 +11,7 @@ export interface Move {
   name: string
   effectiveType: FoodType[]
   power: number
+  bonus_power: number
   mpCost: number
   accuracy: number
   isMutated: boolean

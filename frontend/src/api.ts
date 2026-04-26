@@ -34,7 +34,8 @@ function clearAuthStorage(): void {
 type BackendMove = {
   name: string
   damage: number
-  effectiveType: FoodType[]
+  effective_types: FoodType[]
+  bonus_dmg: number
 }
 
 type BackendPokefood = {
@@ -219,8 +220,9 @@ function mapBackendMove(move: BackendMove, idx: number): Move {
   return {
     id: `${move.name}-${idx}`,
     name: move.name,
-    effectiveType: move.effectiveType,
+    effectiveType: move.effective_types,
     power: move.damage,
+    bonus_power: move.bonus_dmg,
     mpCost: 10,
     accuracy: 100,
     isMutated: false,

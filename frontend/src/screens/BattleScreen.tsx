@@ -10,6 +10,8 @@ import type {
 import { StatBar } from '../components/StatBar'
 import { MoveButton } from '../components/MoveButton'
 import { RarityBadge } from '../components/RarityBadge'
+import {getTypeIcon} from "../utils/icons.ts";
+import {InlineIcon} from "../components/Icon.tsx";
 
 interface BattleScreenProps {
   playerPokefood: Pokefood
@@ -36,6 +38,7 @@ type WsOpponentDisconnectedPayload = {
 
 const MAX_RECONNECT_ATTEMPTS = 4
 const AUTO_EXIT_DELAY_MS = 1600
+const BATTLE_END_ANIMATION_MS = 900
 
 function toRawBase64(imageUrl: string): string {
   const parts = imageUrl.split(',')
@@ -57,10 +60,13 @@ function buildJoinPayload(pokefood: Pokefood): Record<string, unknown> {
       image_base64: toRawBase64(pokefood.imageUrl),
       labels: ['battle'],
       hp: pokefood.hp,
+      atk: pokefood.atk,
       type: pokefood.type,
       moves: pokefood.moves.map((move) => ({
         name: move.name,
         damage: move.power,
+        bonus_dmg: move.bonus_power,
+        effective_types: move.effectiveType
       })),
     },
   }
@@ -93,6 +99,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const [winnerId, setWinnerId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [isBattleEnding, setIsBattleEnding] = useState(false)
+  const [battleLoserId, setBattleLoserId] = useState<string | null>(null)
   const [battleAnimation, setBattleAnimation] = useState<BattleAnimationPhase>('idle')
   const [showClashFlash, setShowClashFlash] = useState(false)
   const websocketRef = useRef<WebSocket | null>(null)
@@ -101,6 +109,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const reconnectAttemptsRef = useRef(0)
   const reconnectTimerRef = useRef<number | null>(null)
   const exitTimerRef = useRef<number | null>(null)
+  const battleEndTimerRef = useRef<number | null>(null)
   const shouldStopReconnectRef = useRef(false)
   const animationTimerRef = useRef<number | null>(null)
 
@@ -115,7 +124,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const playerHp = playerSnapshot?.current_hp ?? playerPokefood.hp
   const opponentHp = opponentSnapshot?.current_hp ?? opponentSnapshot?.pokefood?.hp ?? 0
   const isPlayerTurn = roomState?.turn_player_id === matchSession.playerId
-  const isFinished = roomState?.status === 'finished' || winnerId !== null
+  const isFinished = (roomState?.status === 'finished' || winnerId !== null) && !isBattleEnding
   const wsUrl = useMemo(() => buildBattleWebSocketUrl(matchSession), [matchSession])
   const joinPayload = useRef(() => buildJoinPayload(playerPokefood))
 
@@ -126,6 +135,10 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   useEffect(() => {
     onExitRef.current = onExit
   }, [onExit])
+
+  useEffect(() => {
+    onBattleResultRef.current = onBattleResult
+  }, [onBattleResult])
 
   const triggerAttackAnimation = useCallback((attacker: 'player' | 'opponent') => {
     if (animationTimerRef.current !== null) {
@@ -156,6 +169,13 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       if (exitTimerRef.current !== null) {
         window.clearTimeout(exitTimerRef.current)
         exitTimerRef.current = null
+      }
+    }
+
+    const clearBattleEndTimer = () => {
+      if (battleEndTimerRef.current !== null) {
+        window.clearTimeout(battleEndTimerRef.current)
+        battleEndTimerRef.current = null
       }
     }
 
@@ -237,10 +257,20 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
         if (incoming.type === 'battle_end') {
           const result = incoming.payload as BattleActionResult
-          setWinnerId(result.winner_id)
+          const winner = result.winner_id
+          const loser = winner === matchSession.playerId ? matchSession.opponentId : matchSession.playerId
+          setWinnerId(winner)
+          setBattleLoserId(loser)
+          setIsBattleEnding(true)
           const won = result.winner_id === matchSession.playerId
           setBattleLog((prev) => [...prev, won ? 'Victory!' : 'Defeat!'])
           onBattleResultRef.current?.(won ? 'win' : 'loss')
+          clearBattleEndTimer()
+          battleEndTimerRef.current = window.setTimeout(() => {
+            if (!isDisposed) {
+              setIsBattleEnding(false)
+            }
+          }, BATTLE_END_ANIMATION_MS)
           return
         }
       }
@@ -281,8 +311,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       isDisposed = true
       clearReconnectTimer()
       clearExitTimer()
+      clearBattleEndTimer()
       reconnectAttemptsRef.current = 0
       shouldStopReconnectRef.current = false
+      setIsBattleEnding(false)
+      setBattleLoserId(null)
       if (animationTimerRef.current !== null) {
         window.clearTimeout(animationTimerRef.current)
         animationTimerRef.current = null
@@ -293,7 +326,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       }
       websocketRef.current = null
     }
-  }, [matchSession.playerId, triggerAttackAnimation, wsUrl])
+  }, [matchSession.opponentId, matchSession.playerId, playerPokefood.name, triggerAttackAnimation, wsUrl])
 
   const handleMoveSelect = (move: Move) => {
     const websocket = websocketRef.current
@@ -301,7 +334,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       setBattleLog((prev) => [...prev, 'Connection is not ready yet.'])
       return
     }
-    if (isFinished || !isPlayerTurn) return
+    if (isFinished || !isPlayerTurn || isBattleEnding) return
 
     websocket.send(JSON.stringify({ type: 'action', payload: { move: move.name } }))
   }
@@ -317,6 +350,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       : winnerId === matchSession.playerId
         ? 'You Won!'
         : 'You Lost!'
+
+  const typeIconSelf = getTypeIcon(playerPokefood.type)
+  const typeIconOpponent = getTypeIcon(opponentSnapshot?.pokefood?.type || '')
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4">
@@ -335,13 +371,20 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             <div className="space-y-1">
               <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{playerPokefood.name}</h3>
               <RarityBadge rarity={playerPokefood.rarity} />
+              {typeIconSelf ? (
+                  <InlineIcon
+                      src={typeIconSelf.src}
+                      alt={typeIconSelf.alt}
+                      size="sm"
+                  />
+              ) : null}
             </div>
             {/* overflow-visible so the sprite can travel outside its box during the lunge */}
             <div className="relative flex h-36 w-36 items-center justify-center overflow-visible md:h-44 md:w-44">
               <img
                 src={playerPokefood.pixelArtUrl || playerPokefood.imageUrl}
                 alt={playerPokefood.name}
-                className={`battle-sprite h-full w-full object-contain ${spriteClasses('player', battleAnimation)}`.trim()}
+                className={`battle-sprite h-full w-full object-contain ${spriteClasses('player', battleAnimation)} ${battleLoserId === matchSession.playerId ? 'battle-sprite--faint' : ''}`.trim()}
               />
             </div>
             <StatBar
@@ -358,6 +401,13 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             <div className="space-y-1">
               <h3 className="text-xs text-[var(--color-on-surface)] md:text-sm">{opponentName}</h3>
               <RarityBadge rarity="Common" />
+              {typeIconOpponent ? (
+                  <InlineIcon
+                      src={typeIconOpponent?.src}
+                      alt={typeIconOpponent?.alt}
+                      size="sm"
+                  />
+              ) : null}
             </div>
             {/* overflow-visible so the sprite can travel outside its box during the lunge */}
             <div className="relative flex h-36 w-36 items-center justify-center overflow-visible md:h-44 md:w-44">
@@ -365,7 +415,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                 <img
                   src={opponentImage}
                   alt={opponentName}
-                  className={`battle-sprite h-full w-full object-contain ${spriteClasses('opponent', battleAnimation)}`.trim()}
+                  className={`battle-sprite h-full w-full object-contain ${spriteClasses('opponent', battleAnimation)} ${battleLoserId === matchSession.opponentId ? 'battle-sprite--faint' : ''}`.trim()}
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center rounded-xl border border-[var(--color-outline)] bg-[var(--color-surface-container-high)] text-xs text-[var(--color-on-surface-variant)]">
@@ -401,7 +451,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                 key={move.id}
                 move={move}
                 onSelect={handleMoveSelect}
-                disabled={!isConnected || !isPlayerTurn}
+                disabled={!isConnected || !isPlayerTurn || isBattleEnding}
               />
             ))}
           </div>
