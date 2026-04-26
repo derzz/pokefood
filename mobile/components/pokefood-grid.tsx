@@ -1,5 +1,5 @@
 import React from 'react'
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import type { Pokefood } from '../lib/types'
 import { PokefoodCard } from './pokefood-card'
 import { AppColors } from '../lib/theme'
@@ -28,18 +28,22 @@ export function PokefoodGrid({ pokefood, onSelectPokefood, isLoading = false }: 
     )
   }
 
+  const rows: Pokefood[][] = []
+  for (let i = 0; i < pokefood.length; i += 2) {
+    rows.push(pokefood.slice(i, i + 2))
+  }
+
   return (
-    <FlatList
-      data={pokefood}
-      keyExtractor={(item) => item.id}
-      numColumns={2}
-      columnWrapperStyle={styles.row}
-      contentContainerStyle={styles.list}
-      renderItem={({ item }) => (
-        <PokefoodCard pokefood={item} onSelect={onSelectPokefood} />
-      )}
-      scrollEnabled={false}
-    />
+    <View style={styles.grid}>
+      {rows.map((row, rowIndex) => (
+        <View key={rowIndex} style={styles.row}>
+          {row.map((item) => (
+            <PokefoodCard key={item.id} pokefood={item} onSelect={onSelectPokefood} />
+          ))}
+          {row.length === 1 && <View style={styles.placeholder} />}
+        </View>
+      ))}
+    </View>
   )
 }
 
@@ -58,6 +62,7 @@ const styles = StyleSheet.create({
     color: AppColors.onSurfaceVariant,
     textAlign: 'center',
   },
-  list: { gap: 8 },
-  row: { gap: 8 },
+  grid: { gap: 6 },
+  row: { flexDirection: 'row', gap: 6 },
+  placeholder: { flex: 1 },
 })

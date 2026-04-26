@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.surfaceContainerHigh,
   },
   image: { width: '100%', height: '100%' },
-  info: { padding: 12, gap: 8 },
+  info: { padding: 8, gap: 5 },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -92,17 +92,17 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 10,
     color: AppColors.onSurface,
-    marginRight: 4,
+    marginRight: 2,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     backgroundColor: AppColors.surfaceContainerHigh,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
-  statText: { fontSize: 10, color: AppColors.onSurfaceVariant },
+  statText: { fontSize: 9, color: AppColors.onSurfaceVariant },
 })
