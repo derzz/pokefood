@@ -1,19 +1,4 @@
-import React, { useEffect, useState } from 'react'
-
-const LOADING_PHRASES = [
-  'Whisking up pixel flavor...',
-  'Seasoning your snapshot...',
-  'Simmering a flavor forecast...',
-  'Plating a midnight special...',
-  'Sprinkling extra crunch data...',
-  'Caramelizing colors and textures...',
-  'Shaking up a visual tasting menu...',
-  'Reducing noise into rich aroma notes...',
-  'Pairing patterns with perfect garnish...',
-  'Roasting details to golden crisp...',
-  'Folding ingredients into a fantasy feast...',
-  'Mapping your meal to a chef\'s quest...'
-]
+import React, { useState } from 'react'
 
 interface UploadZoneProps {
   onFileSelect: (file: File) => void
@@ -22,20 +7,6 @@ interface UploadZoneProps {
 
 export const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, isLoading }) => {
   const [isDragActive, setIsDragActive] = useState(false)
-  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0)
-
-  useEffect(() => {
-    if (!isLoading) {
-      setLoadingPhraseIndex(0)
-      return
-    }
-
-    const intervalId = window.setInterval(() => {
-      setLoadingPhraseIndex((prevIndex) => (prevIndex + 1) % LOADING_PHRASES.length)
-    }, 1800)
-
-    return () => window.clearInterval(intervalId)
-  }, [isLoading])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -91,9 +62,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, isLoading 
           <p className="text-xs leading-relaxed text-black/70 md:text-sm">
             Drag and drop your food image here or click to select
           </p>
-          {isLoading && (
-            <p className="text-xs text-black/70 md:text-sm">{LOADING_PHRASES[loadingPhraseIndex]}</p>
-          )}
+          {isLoading && <p className="text-xs text-black md:text-sm">Processing...</p>}
         </div>
       </label>
     </div>
