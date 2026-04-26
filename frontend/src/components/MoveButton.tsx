@@ -1,5 +1,7 @@
 import React from 'react'
 import type { Move } from '../types'
+import {getTypeIcon} from "../utils/icons.ts";
+import {InlineIcon} from "./Icon.tsx";
 
 interface MoveButtonProps {
   move: Move
@@ -23,9 +25,31 @@ export const MoveButton: React.FC<MoveButtonProps> = ({
       disabled={disabled}
       title={`Power: ${move.power}, Accuracy: ${move.accuracy}%`}
     >
-      <div className="text-xs text-[var(--color-on-surface)] md:text-sm">{move.name}{mutatedIndicator}</div>
-      <div className="mt-1 flex gap-3 text-[10px] text-[var(--color-on-surface-variant)] md:text-xs">
-        <span>PWR {move.power}</span>
+      <div className="flex items-center gap-3">
+        {/* Type Icons added to the left */}
+        <span className="flex flex-shrink-0 gap-1">
+          {(move.effectiveType ?? []).map((type, index) => {
+            const typeIcon = getTypeIcon(type.toLowerCase().replace(/\s+/g, '_'));
+            return typeIcon ? (
+              <InlineIcon
+                key={index}
+                src={typeIcon.src}
+                alt={type}
+                size="sm"
+              />
+            ) : null;
+          })}
+        </span>
+
+        {/* Move details */}
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-[var(--color-on-surface)] md:text-sm truncate">
+            {move.name}{mutatedIndicator}
+          </div>
+          <div className="mt-1 flex gap-3 text-[10px] text-[var(--color-on-surface-variant)] md:text-xs">
+            <span>PWR {move.power}</span>
+          </div>
+        </div>
       </div>
     </button>
   )

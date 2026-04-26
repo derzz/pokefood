@@ -251,8 +251,8 @@ class RoomManager:
             if not move:
                 raise RoomError("move not found in moveset")
 
-            multiplier = self._type_multiplier(attacker.pokefood.type, defender.pokefood.type)
-            damage = max(1, int(round(move.damage * multiplier)))
+            multiplier = move.bonus_dmg if defender.pokefood.type in move.effective_types else 0
+            damage = max(1, int((move.damage + multiplier) * attacker.pokefood.atk))
             defender.current_hp = max(0, (defender.current_hp or defender.pokefood.hp) - damage)
 
             winner_id = None

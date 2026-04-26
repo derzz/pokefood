@@ -10,6 +10,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+import math
 from pydantic import ValidationError
 
 from ml.cv.model import FoodType
@@ -17,6 +18,19 @@ from models.pokefood import Move, Pokefood
 
 logger = logging.getLogger(__name__)
 _MOVES_JSON_PATH = Path(__file__).with_name("moves.json")
+_RARITY_LEVELS: dict[str, int] = {
+    "common": 0,
+    "rare": 1,
+    "epic": 2,
+    "legendary": 3,
+}
+
+
+def _normalize_rarity(rarity: str | int) -> int:
+    if isinstance(rarity, int):
+        return max(0, min(3, rarity))
+    rarity_key = _normalize_key(str(rarity))
+    return _RARITY_LEVELS.get(rarity_key, 0)
 
 
 def _normalize_key(text: str) -> str:
@@ -131,13 +145,29 @@ def _normalize_labels(labels: Sequence[Any]) -> list[str]:
     return normalized
 
 
-def _derive_hp(*, labels: Sequence[str], food_name: str, name: str) -> int:
-    seed = "|".join([food_name, name, *labels]).encode("utf-8")
+def _derive_stat(
+    *,
+    labels: Sequence[str],
+    food_name: str,
+    name: str,
+    min_bound: int,
+    max_bound: int,
+    rarity: int,
+) -> int:
+    seed = "|".join([food_name, name, *labels, str(rarity)]).encode("utf-8")
     digest = hashlib.sha256(seed).hexdigest()
-    return 60 + (int(digest[:8], 16) % 41)
+    span = max(0, max_bound - min_bound)
+    base_hp = min_bound + (int(digest[:8], 16) % (span + 1))
+
+    # Higher rarity increases both bonus chance and bonus size.
+    bonus_chance = (0.15, 0.35, 0.60, 0.85)[rarity]
+    if random.random() < bonus_chance:
+        base_hp += random.randint(1, 4 + (rarity * 3))
+
+    return min(max_bound, base_hp)
 
 
-def _build_moves(labels: Sequence[str]) -> list[Move]:
+def _build_moves(labels: Sequence[str], rarity: int) -> list[Move]:
     if not labels:
         return [Move(name="Signature Bite", damage=12), Move(name="Quick Nibble", damage=8)]
 
@@ -154,15 +184,19 @@ def _build_moves(labels: Sequence[str]) -> list[Move]:
         move_name = str(chosen.get("move_name", "Quick Nibble")).strip() or "Quick Nibble"
         if move_name in used_names:
             continue
-        damage = int(chosen.get("base_dmg", 10))
-        moves.append(Move(name=move_name, damage=max(1, damage)))
+        damage = float(chosen.get("base_dmg", 10))
+        bonus_dmg = float(chosen.get("cond_dmg", 0))
+        effective_types = [FoodType(t) for t in chosen.get("cond_type", [])]
+        moves.append(Move(name=move_name, damage=damage, bonus_dmg=bonus_dmg, effective_types=effective_types))
         used_names.add(move_name)
         if len(moves) >= 4:
             break
 
     if moves:
         return moves
-    return [Move(name="Signature Bite", damage=12), Move(name="Quick Nibble", damage=8)]
+    return [Move(name="Signature Bite", damage=1, bonus_dmg=0, effective_types=[]),
+            Move(name="Quick Nibble", damage=0.1, bonus_dmg=1, effective_types=[FoodType(t) for t in FoodType])]
+
 
 
 def pokefood_generator(
@@ -177,8 +211,12 @@ def pokefood_generator(
     if not normalized_labels:
         normalized_labels = [food_name, name]
 
-    hp = _derive_hp(labels=normalized_labels, food_name=food_name, name=name)
-    moves = _build_moves(normalized_labels)
+    rarity_level = _normalize_rarity(rarity)
+    hp = _derive_stat(labels=normalized_labels, food_name=food_name, name=name, min_bound=rarity_level * 10 + 10,
+                      max_bound=rarity_level * 500 + 50, rarity=rarity_level)
+    atk = _derive_stat(labels=normalized_labels, food_name=food_name, name=name, min_bound=rarity_level * 25 + 10,
+                       max_bound=rarity_level * 100 + 50, rarity=rarity_level)
+    moves = _build_moves(normalized_labels, rarity=rarity_level)
 
     try:
         return Pokefood(
@@ -187,9 +225,10 @@ def pokefood_generator(
             image_base64=b64encode(image_base64).decode("ascii"),
             labels=normalized_labels,
             hp=hp,
+            atk=atk,
             type=food_type,
             moves=moves,
-            rarity=rarity,
+            rarity=rarity
         )
     except ValidationError as exc:
         logger.error(

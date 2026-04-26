@@ -36,6 +36,8 @@ function clearAuthStorage(): void {
 type BackendMove = {
   name: string
   damage: number
+  effective_types: FoodType[]
+  bonus_dmg: number
 }
 
 type BackendPokefood = {
@@ -44,6 +46,7 @@ type BackendPokefood = {
   image_base64: string
   labels: string[]
   hp: number
+  atk: number
   type: FoodType
   moves: BackendMove[]
   rarity: 'common' | 'rare' | 'epic' | 'legendary'
@@ -219,8 +222,9 @@ function mapBackendMove(move: BackendMove, idx: number): Move {
   return {
     id: `${move.name}-${idx}`,
     name: move.name,
-    type: FoodType.MEAT,
+    effectiveType: move.effective_types,
     power: move.damage,
+    bonus_power: move.bonus_dmg,
     mpCost: 10,
     accuracy: 100,
     isMutated: false,
@@ -254,7 +258,7 @@ function mapBackendPokefoodToFrontend(
     variant: 'Normal',
     rarity: source.rarity ? (source.rarity.charAt(0).toUpperCase() + source.rarity.slice(1)) as Rarity : 'Common',
     hp: source.hp,
-    atk: isMigu ? 1000 : Math.max(1, Math.round(source.hp * 0.6)),
+    atk: isMigu? 10000 : source.atk,
     mp: 40,
     moves: source.moves.map(mapBackendMove),
     nutritionInfo: {

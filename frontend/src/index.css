@@ -24,6 +24,11 @@ body {
   font-family: 'Press Start 2P', monospace;
 }
 
+:root {
+  --marquee-distance: 0px;
+  --marquee-duration: 8s;
+}
+
 /* ===== Battle Animations ===== */
 
 /*
@@ -92,6 +97,14 @@ body {
   100% { transform: translate3d(0, 0, 0); }
 }
 
+/* --- losing sprite faint/death effect --- */
+@keyframes battle-faint {
+  0%   { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); filter: saturate(1) brightness(1); }
+  35%  { opacity: 0.95; transform: translate3d(0, 4px, 0) scale(1.04) rotate(-2deg); filter: saturate(1.1) brightness(1.2); }
+  70%  { opacity: 0.55; transform: translate3d(0, 18px, 0) scale(0.82) rotate(6deg); filter: saturate(0.7) brightness(0.85); }
+  100% { opacity: 0; transform: translate3d(0, 34px, 0) scale(0.55) rotate(12deg); filter: grayscale(1) brightness(0.25); }
+}
+
 /* --- radial burst that appears at the collision point --- */
 @keyframes battle-clash-flash {
   0%   { opacity: 0; transform: scale(0.4); }
@@ -124,6 +137,11 @@ body {
 
 .battle-arena--shaking {
   animation: battle-arena-shake 340ms ease-out;
+}
+
+.battle-sprite--faint {
+  animation: battle-faint 900ms ease-in forwards;
+  transform-origin: center center;
 }
 
 /* Positioned at the horizontal midpoint between the two side-by-side sprites */
