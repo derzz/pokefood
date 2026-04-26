@@ -10,19 +10,6 @@ interface PokefoodCardProps {
   className?: string
 }
 
-function getTypeTooltip(type: string): string {
-  switch (type) {
-    case 'meat':
-      return 'Type: Meat'
-    case 'grains':
-      return 'Type: Grain'
-    case 'fruits_vegetables':
-      return 'Type: Fruit/Vegetable'
-    default:
-      return `Type: ${type}`
-  }
-}
-
 const RARITY_BORDER: Record<string, string> = {
   Common: '#9B9B9B',
   Rare: '#F97800',
