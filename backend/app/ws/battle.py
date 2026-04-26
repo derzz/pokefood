@@ -13,6 +13,19 @@ router = APIRouter(tags=["battle"])
 logger = logging.getLogger(__name__)
 
 
+async def _send_room_error(websocket: WebSocket, message: str, retryable: bool) -> None:
+    await websocket.send_json(
+        {
+            "type": "error",
+            "payload": {
+                "code": "room_error",
+                "retryable": retryable,
+                "message": message,
+            },
+        }
+    )
+
+
 @router.websocket("/ws/battle/{room_id}")
 async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = Query(...)) -> None:
     logger.info("battle.websocket connect", extra={"room_id": room_id, "player_id": player_id})
@@ -25,7 +38,7 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             "battle.websocket rejected",
             extra={"room_id": room_id, "player_id": player_id, "error": str(exc)},
         )
-        await websocket.send_json({"type": "error", "payload": {"message": str(exc)}})
+        await _send_room_error(websocket, str(exc), retryable=False)
         await websocket.close(code=4400)
         return
 
@@ -76,7 +89,8 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             "battle.websocket room_error",
             extra={"room_id": room_id, "player_id": player_id, "error": str(exc)},
         )
-        await websocket.send_json({"type": "error", "payload": {"message": str(exc)}})
+        await _send_room_error(websocket, str(exc), retryable=False)
+        await websocket.close(code=4400)
 
 
 async def _handle_event(room_id: str, player_id: str, event: WsEvent) -> None:

@@ -4,6 +4,10 @@ import asyncio
 import httpx
 from fastapi.testclient import TestClient
 
+from app.core.battle_runtime import room_manager
+from app.core.room_manager import PlayerState, RoomState
+from app.db.models import User
+from app.db.session import SessionLocal
 from app.main import app
 from models.constants import FoodType
 
@@ -125,6 +129,51 @@ def test_matchmake_pairs_two_waiting_users() -> None:
     assert payload_a["room_id"] == payload_b["room_id"]
     assert payload_a["player_id"] == payload_b["opponent_id"]
     assert payload_b["player_id"] == payload_a["opponent_id"]
+
+
+def test_matchmake_recovers_from_stale_single_player_room() -> None:
+    room_manager.rooms.clear()
+    room_manager._waiting_match_requests.clear()
+    room_manager._waiting_match_requests_by_player.clear()
+
+    email_a = f"stale-a-{uuid.uuid4().hex[:8]}@example.com"
+    headers_a = _auth_headers(email=email_a)
+    headers_b = _auth_headers(email=f"stale-b-{uuid.uuid4().hex[:8]}@example.com")
+
+    with SessionLocal() as db:
+        user_a = db.query(User).filter(User.email == email_a).first()
+        assert user_a is not None
+        player_id_a = f"user-{user_a.id}"
+
+    stale_room_id = f"room-stale-{uuid.uuid4().hex[:8]}"
+    room_manager.rooms[stale_room_id] = RoomState(
+        room_id=stale_room_id,
+        players={
+            player_id_a: PlayerState(),
+        },
+    )
+
+    async def _create_matches() -> tuple[httpx.Response, httpx.Response]:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as async_client:
+            return await asyncio.gather(
+                async_client.post("/api/v1/battles/matchmake", headers=headers_a),
+                async_client.post("/api/v1/battles/matchmake", headers=headers_b),
+            )
+
+    match_a, match_b = asyncio.run(_create_matches())
+
+    assert match_a.status_code == 200
+    assert match_b.status_code == 200
+    body_a = match_a.json()
+    body_b = match_b.json()
+    assert body_a["room_id"] == body_b["room_id"]
+    assert body_a["player_id"] == body_b["opponent_id"]
+    assert body_b["player_id"] == body_a["opponent_id"]
+
+    room_manager.rooms.clear()
+    room_manager._waiting_match_requests.clear()
+    room_manager._waiting_match_requests_by_player.clear()
 
 
 
