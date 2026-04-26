@@ -1,4 +1,5 @@
 import type { BattleMatchSession, Move, Pokefood } from './types'
+import { FoodType } from './constants'
 
 /**
  * API client for Pokefood backend communication
@@ -37,7 +38,7 @@ type BackendPokefood = {
   image_base64: string
   labels: string[]
   hp: number
-  type: 'fruits_vegetables' | 'meat' | 'grains' | 'fruveg' | 'grain'
+  type: FoodType
   moves: BackendMove[]
 }
 
@@ -195,17 +196,11 @@ function buildAuthHeaders(): HeadersInit {
   }
 }
 
-function mapBackendType(type: BackendPokefood['type']): Pokefood['type'] {
-  if (type === 'meat') return 'Meat'
-  if (type === 'grain' || type === 'grains') return 'Grain'
-  return 'Fruit'
-}
-
 function mapBackendMove(move: BackendMove, idx: number): Move {
   return {
     id: `${move.name}-${idx}`,
     name: move.name,
-    type: 'Meat',
+    type: FoodType.MEAT,
     power: move.damage,
     mpCost: 10,
     accuracy: 100,
@@ -233,7 +228,7 @@ function mapBackendPokefoodToFrontend(
     id,
     name: source.personal_name || source.name,
     imageUrl: toImageDataUrl(source.image_base64),
-    type: mapBackendType(source.type),
+    type: source.type,
     variant: 'Normal',
     rarity: 'Common',
     hp: source.hp,
