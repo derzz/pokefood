@@ -28,7 +28,13 @@ type WsErrorPayload = {
   retryable?: boolean
 }
 
+type WsOpponentDisconnectedPayload = {
+  player_id?: string
+  message?: string
+}
+
 const MAX_RECONNECT_ATTEMPTS = 4
+const AUTO_EXIT_DELAY_MS = 1600
 
 function toRawBase64(imageUrl: string): string {
   const parts = imageUrl.split(',')
@@ -88,6 +94,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const [battleAnimation, setBattleAnimation] = useState<BattleAnimationPhase>('idle')
   const [showClashFlash, setShowClashFlash] = useState(false)
   const websocketRef = useRef<WebSocket | null>(null)
+  const onExitRef = useRef(onExit)
   const reconnectAttemptsRef = useRef(0)
   const reconnectTimerRef = useRef<number | null>(null)
   const exitTimerRef = useRef<number | null>(null)
@@ -113,6 +120,10 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     joinPayload.current = () => buildJoinPayload(playerPokefood)
   }, [playerPokefood])
 
+  useEffect(() => {
+    onExitRef.current = onExit
+  }, [onExit])
+
   const triggerAttackAnimation = useCallback((attacker: 'player' | 'opponent') => {
     if (animationTimerRef.current !== null) {
       window.clearTimeout(animationTimerRef.current)
@@ -129,11 +140,6 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
   useEffect(() => {
     let isDisposed = false
-
-    setBattleLog(['Connecting to battle server...'])
-    setErrorMessage(null)
-    setWinnerId(null)
-    setIsConnected(false)
     shouldStopReconnectRef.current = false
 
     const clearReconnectTimer = () => {
@@ -162,9 +168,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       }
       exitTimerRef.current = window.setTimeout(() => {
         if (!isDisposed) {
-          onExit()
+          onExitRef.current()
         }
-      }, 900)
+      }, AUTO_EXIT_DELAY_MS)
     }
 
     const connect = () => {
@@ -204,6 +210,12 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
         if (incoming.type === 'state_update') {
           setRoomState(incoming.payload as BattleRoomSnapshot)
+          return
+        }
+
+        if (incoming.type === 'opponent_disconnected') {
+          const payload = incoming.payload as WsOpponentDisconnectedPayload
+          returnUserToHome(payload.message || 'Opponent disconnected. Returning to collection...')
           return
         }
 
@@ -275,7 +287,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       }
       websocketRef.current = null
     }
-  }, [matchSession.playerId, onExit, triggerAttackAnimation, wsUrl])
+  }, [matchSession.playerId, triggerAttackAnimation, wsUrl])
 
   const handleMoveSelect = (move: Move) => {
     const websocket = websocketRef.current

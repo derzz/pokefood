@@ -76,12 +76,34 @@ async def battle_websocket(websocket: WebSocket, room_id: str, player_id: str = 
             await _handle_event(room_id=room_id, player_id=player_id, event=event)
     except WebSocketDisconnect:
         logger.info("battle.websocket disconnect", extra={"room_id": room_id, "player_id": player_id})
+
+        was_live_battle = False
+        if room_id in room_manager.rooms:
+            pre_disconnect_snapshot = await room_manager.snapshot(room_id)
+            was_live_battle = pre_disconnect_snapshot.status == "in_progress" and len(pre_disconnect_snapshot.players) == 2
+
         await room_manager.disconnect(room_id=room_id, player_id=player_id, websocket=websocket)
+
+        if room_id in room_manager.rooms:
+            snapshot = await room_manager.snapshot(room_id)
+
+            if was_live_battle and len(snapshot.players) == 1:
+                await room_manager.broadcast(
+                    room_id,
+                    {
+                        "type": "opponent_disconnected",
+                        "payload": {
+                            "player_id": player_id,
+                            "message": "Opponent disconnected. Returning to collection shortly.",
+                        },
+                    },
+                )
+
         await room_manager.broadcast(
             room_id,
             {
                 "type": "state_update",
-                "payload": (await room_manager.snapshot(room_id)).model_dump(mode="json") if room_id in room_manager.rooms else {},
+                "payload": snapshot.model_dump(mode="json") if room_id in room_manager.rooms else {},
             },
         )
     except RoomError as exc:
