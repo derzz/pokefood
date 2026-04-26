@@ -10,16 +10,25 @@ interface PokefoodCardProps {
   className?: string
 }
 
+const RARITY_BORDER: Record<string, string> = {
+  Common: '#9B9B9B',
+  Rare: '#F97800',
+  Epic: '#A020F0',
+}
+
 export const PokefoodCard: React.FC<PokefoodCardProps> = ({
   pokefood,
   onSelect,
   className,
 }) => {
   const typeIcon = getTypeIcon(pokefood.type.toLowerCase().replace(/\s+/g, '_'))
+  const isLegendary = pokefood.rarity === 'Legendary'
+  const borderColor = RARITY_BORDER[pokefood.rarity] ?? '#938F99'
 
   return (
     <div
-      className={`group overflow-hidden rounded-2xl border border-[var(--color-outline)] bg-[var(--color-surface-container)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${className || ''}`}
+      className={`group overflow-hidden rounded-2xl bg-[var(--color-surface-container)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${isLegendary ? 'rarity-legendary-border' : 'border-2'} ${className || ''}`}
+      style={isLegendary ? undefined : { borderColor }}
       onClick={() => onSelect(pokefood)}
       role="button"
       tabIndex={0}

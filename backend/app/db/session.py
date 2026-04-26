@@ -40,6 +40,9 @@ def init_db() -> None:
             if "image_base64" not in column_names:
                 with engine.begin() as connection:
                     connection.execute(text("DROP TABLE stored_pokefoods"))
+            elif "rarity" not in column_names:
+                with engine.begin() as connection:
+                    connection.execute(text("ALTER TABLE stored_pokefoods ADD COLUMN rarity VARCHAR(32) DEFAULT 'common'"))
     Base.metadata.create_all(bind=engine)
     _seed_dummy_accounts()
 

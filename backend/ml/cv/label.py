@@ -9,7 +9,7 @@ def _build_system_prompt(schema: FoodLabelSchema) -> str:
         lines.append(schema.description)
     lines.append("")
     food_types = ", ".join(t.value for t in FoodType)
-    lines.append(f"For the given image, identify the food's name, write a brief description of it, classify its primary type as one of [{food_types}], and select exactly one label per category from the options below.")
+    lines.append(f"For the given image, identify the food's name, write a brief description of it, classify its primary type as one of [{food_types}], select exactly one label per category from the options below, and assess its rarity.")
     lines.append("")
     for cat in schema.categories:
         header = f"Category: {cat.name}"
@@ -17,6 +17,12 @@ def _build_system_prompt(schema: FoodLabelSchema) -> str:
             header += f" — {cat.description}"
         lines.append(header)
         lines.append(f"  Options: {', '.join(cat.labels)}")
+    lines.append("")
+    lines.append("Rarity — assess based on visual quality and presentation:")
+    lines.append("  common: everyday, plain food (plain rice, basic sandwich, simple salad)")
+    lines.append("  rare: well-presented or somewhat special dish (nicely plated restaurant meal)")
+    lines.append("  epic: elaborate, beautifully plated, high-end dish (fine dining, intricate preparation)")
+    lines.append("  legendary: extraordinary, masterpiece-level presentation or extremely rare delicacy")
     return "\n".join(lines)
 
 

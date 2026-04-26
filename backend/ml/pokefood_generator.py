@@ -171,6 +171,7 @@ def pokefood_generator(
     name: str,
     image_base64: bytes,
     food_type: FoodType,
+    rarity: str = "common",
 ) -> Pokefood:
     normalized_labels = _normalize_labels(labels)
     if not normalized_labels:
@@ -188,6 +189,7 @@ def pokefood_generator(
             hp=hp,
             type=food_type,
             moves=moves,
+            rarity=rarity,
         )
     except ValidationError as exc:
         logger.error(

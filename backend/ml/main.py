@@ -16,6 +16,7 @@ async def generate_pokefood_and_icon(base64_image: str) -> Pokefood:
         name=label_result.name,
         image_base64=icon_bytes,
         food_type=label_result.type,
+        rarity=label_result.rarity.value,
     )
 
     return pokefood

@@ -7,9 +7,10 @@ from PIL import Image
 _MODEL = "gpt-image-1"
 
 _PROMPT = (
-    "Transform this image into pixel art. Render it in a retro 8-bit style with chunky visible "
-    "pixels, a limited color palette, and a nostalgic video game aesthetic. Preserve the same "
-    "subject and overall composition."
+    "Transform this image into pixel art in the style of Pokemon Gold/Silver on the Game Boy Color. "
+    "Use a vibrant but limited color palette typical of GBC games, coarse 8-bit pixels, hard black outlines, "
+    "and flat cel-shaded coloring with no gradients, exactly like the original Game Boy Color sprites. "
+    "Preserve the subject and overall composition."
 )
 
 

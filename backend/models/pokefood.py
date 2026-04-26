@@ -20,3 +20,4 @@ class Pokefood(BaseModel):
     hp: int = Field(..., ge=0)
     type: FoodType
     moves: list[Move] = Field(..., max_length=4)
+    rarity: str = "common"

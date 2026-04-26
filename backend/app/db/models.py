@@ -34,6 +34,7 @@ class StoredPokefood(Base):
     hp: Mapped[int] = mapped_column(Integer)
     type: Mapped[str] = mapped_column(String(32))
     moves_json: Mapped[str] = mapped_column(Text)
+    rarity: Mapped[str] = mapped_column(String(32), default="common")
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
