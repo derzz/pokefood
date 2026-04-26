@@ -1,3 +1,4 @@
+from models.constants import FoodType
 from .mllm_client import MLLMClient
 from .model import CategoryLabel, FoodLabelResult, FoodLabelSchema
 
@@ -7,7 +8,8 @@ def _build_system_prompt(schema: FoodLabelSchema) -> str:
     if schema.description:
         lines.append(schema.description)
     lines.append("")
-    lines.append("For the given image, identify the food's name, write a brief description of it, classify its primary type as one of [meat, grains, fruits_vegetables], and select exactly one label per category from the options below.")
+    food_types = ", ".join(t.value for t in FoodType)
+    lines.append(f"For the given image, identify the food's name, write a brief description of it, classify its primary type as one of [{food_types}], and select exactly one label per category from the options below.")
     lines.append("")
     for cat in schema.categories:
         header = f"Category: {cat.name}"

@@ -32,7 +32,7 @@
     },
     "type": {
       "type": "string",
-      "enum": ["fruveg", "meat", "grain"]
+      "enum": ["meat", "grains", "fruits_vegetables"]
     },
     "moves": {
       "type": "array",

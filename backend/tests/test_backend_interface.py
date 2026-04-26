@@ -5,6 +5,7 @@ import httpx
 from fastapi.testclient import TestClient
 
 from app.main import app
+from models.constants import FoodType
 
 client = TestClient(app)
 
@@ -65,7 +66,7 @@ def test_websocket_battle_room_flow() -> None:
                 {
                     "type": "join",
                     "payload": {
-                        "pokefood": _pokefood(name="tofu", personal_name="Tofugeist", hp=65, pokefood_type="grain")
+                        "pokefood": _pokefood(name="tofu", personal_name="Tofugeist", hp=65, pokefood_type=FoodType.GRAINS)
                     },
                 }
             )
@@ -73,7 +74,7 @@ def test_websocket_battle_room_flow() -> None:
                 {
                     "type": "join",
                     "payload": {
-                        "pokefood": _pokefood(name="sushi", personal_name="Sushiking", hp=72, pokefood_type="meat")
+                        "pokefood": _pokefood(name="sushi", personal_name="Sushiking", hp=72, pokefood_type=FoodType.MEAT)
                     },
                 }
             )

@@ -6,6 +6,7 @@ import httpx
 
 from ml.main import generate_pokefood_and_icon
 from models import Move, Pokefood
+from models.constants import FoodType
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class CVService:
 
         food_names = ["burger", "sushi", "broccoli", "tofu"]
         personal_names = ["Pikaberry", "Sushizard", "Broccolisaur", "Tofurtle"]
-        pokefood_types = ["grain", "meat", "fruveg", "meat"]
+        pokefood_types = [FoodType.GRAINS, FoodType.MEAT, FoodType.FRUITS_VEGETABLES, FoodType.MEAT]
 
         idx = seed % len(food_names)
         food_name = food_names[idx]

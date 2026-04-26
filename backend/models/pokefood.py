@@ -1,6 +1,6 @@
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict, Field
+
+from models.constants import FoodType
 
 
 class Move(BaseModel):
@@ -18,5 +18,5 @@ class Pokefood(BaseModel):
     image_base64: str = Field(..., min_length=4)
     labels: list[str]
     hp: int = Field(..., ge=0)
-    type: Literal["meat", "grains", "fruits_vegetables"]
+    type: FoodType
     moves: list[Move] = Field(..., max_length=4)
