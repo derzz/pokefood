@@ -22,12 +22,6 @@ type WsEvent = {
   payload: unknown
 }
 
-function mapFrontendTypeToBackend(type: Pokefood['type']): 'fruits_vegetables' | 'meat' | 'grains' {
-  if (type === 'Grain') return 'grains'
-  if (type === 'Meat') return 'meat'
-  return 'fruits_vegetables'
-}
-
 function toRawBase64(imageUrl: string): string {
   const parts = imageUrl.split(',')
   return parts.length > 1 ? parts[1] : imageUrl
@@ -48,7 +42,7 @@ function buildJoinPayload(pokefood: Pokefood): Record<string, unknown> {
       image_base64: toRawBase64(pokefood.imageUrl),
       labels: ['battle'],
       hp: pokefood.hp,
-      type: mapFrontendTypeToBackend(pokefood.type),
+      type: pokefood.type,
       moves: pokefood.moves.map((move) => ({
         name: move.name,
         damage: move.power,

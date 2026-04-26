@@ -2,6 +2,8 @@
  * Icon paths and metadata for displaying emoji icons throughout the app
  */
 
+import { FoodType } from '../constants'
+
 export const CATEGORY_ICONS = {
   regional_heritage: {
     src: '/categories/regional_heritage.png',
@@ -40,23 +42,23 @@ export const CATEGORY_ICONS = {
   }
 } as const
 
-export const TYPE_ICONS = {
-  meat: {
+export const TYPE_ICONS: Record<FoodType, { src: string; label: string; alt: string }> = {
+  [FoodType.MEAT]: {
     src: '/types/meat.png',
     label: 'Meat',
     alt: 'Cut of meat'
   },
-  grains: {
+  [FoodType.GRAINS]: {
     src: '/types/grains.png',
     label: 'Grains',
     alt: 'Sheaf of rice'
   },
-  fruits_vegetables: {
+  [FoodType.FRUITS_VEGETABLES]: {
     src: '/types/fruits_vegetables.png',
     label: 'Fruits & Vegetables',
     alt: 'Broccoli representing fruits and vegetables'
-  }
-} as const
+  },
+}
 
 // Stat icons - using existing category icons as they work well for stats
 export const STAT_ICONS = {
@@ -102,32 +104,16 @@ export const NUTRITION_ICONS = {
 } as const
 
 export type CategoryIconKey = keyof typeof CATEGORY_ICONS
-export type TypeIconKey = keyof typeof TYPE_ICONS
+export type TypeIconKey = FoodType
 export type StatIconKey = keyof typeof STAT_ICONS
 export type NutritionIconKey = keyof typeof NUTRITION_ICONS
-
-const TYPE_ICON_ALIASES: Record<string, TypeIconKey> = {
-  meat: 'meat',
-  grain: 'grains',
-  grains: 'grains',
-  fruveg: 'fruits_vegetables',
-  fruit: 'fruits_vegetables',
-  fruit_vegetable: 'fruits_vegetables',
-  fruit_vegetables: 'fruits_vegetables',
-  fruits: 'fruits_vegetables',
-  vegetable: 'fruits_vegetables',
-  vegetables: 'fruits_vegetables',
-  fruits_vegetables: 'fruits_vegetables'
-}
 
 export const getCategoryIcon = (key: string) => {
   return CATEGORY_ICONS[key as CategoryIconKey] || null
 }
 
 export const getTypeIcon = (key: string) => {
-  const normalizedKey = key.trim().toLowerCase().replace(/[\s\/-]+/g, '_')
-  const resolvedKey = TYPE_ICON_ALIASES[normalizedKey]
-  return resolvedKey ? TYPE_ICONS[resolvedKey] : null
+  return TYPE_ICONS[key as FoodType] ?? null
 }
 
 export const getStatIcon = (key: string) => {

@@ -1,4 +1,5 @@
 import type { BattleMatchSession, Move, Pokefood } from './types'
+import { FoodType } from './constants'
 
 /**
  * API client for Pokefood backend communication
@@ -7,6 +8,8 @@ import type { BattleMatchSession, Move, Pokefood } from './types'
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
+const API_POKEFOODS_BASE_PATH = '/api/v1/pokefoods'
+const API_POKEFOODS_GET_ALL_PATH = `${API_POKEFOODS_BASE_PATH}/all`
 const ACCESS_TOKEN_KEY = 'pokefood.accessToken'
 const USER_ID_KEY = 'pokefood.userId'
 
@@ -37,7 +40,7 @@ type BackendPokefood = {
   image_base64: string
   labels: string[]
   hp: number
-  type: 'fruits_vegetables' | 'meat' | 'grains' | 'fruveg' | 'grain'
+  type: FoodType
   moves: BackendMove[]
 }
 
@@ -195,17 +198,11 @@ function buildAuthHeaders(): HeadersInit {
   }
 }
 
-function mapBackendType(type: BackendPokefood['type']): Pokefood['type'] {
-  if (type === 'meat') return 'Meat'
-  if (type === 'grain' || type === 'grains') return 'Grain'
-  return 'Fruit'
-}
-
 function mapBackendMove(move: BackendMove, idx: number): Move {
   return {
     id: `${move.name}-${idx}`,
     name: move.name,
-    type: 'Meat',
+    type: FoodType.MEAT,
     power: move.damage,
     mpCost: 10,
     accuracy: 100,
@@ -233,7 +230,7 @@ function mapBackendPokefoodToFrontend(
     id,
     name: source.personal_name || source.name,
     imageUrl: toImageDataUrl(source.image_base64),
-    type: mapBackendType(source.type),
+    type: source.type,
     variant: 'Normal',
     rarity: 'Common',
     hp: source.hp,
@@ -275,7 +272,7 @@ function fileToBase64(file: File): Promise<string> {
 export async function uploadFoodImage(file: File): Promise<Pokefood> {
   const imageBase64 = await fileToBase64(file)
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/pokefoods/from-image`, {
+  const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_BASE_PATH}/from-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -306,7 +303,7 @@ export async function uploadFoodImage(file: File): Promise<Pokefood> {
  * Get all user's Pokefood collection
  */
 export async function getUserCollection(userId: string): Promise<Pokefood[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/pokefoods`, {
+  const response = await fetch(`${API_BASE_URL}${API_POKEFOODS_GET_ALL_PATH}`, {
     headers: {
       ...buildAuthHeaders(),
     },
