@@ -22,6 +22,14 @@ type WsEvent = {
   payload: unknown
 }
 
+type WsErrorPayload = {
+  code?: string
+  message?: string
+  retryable?: boolean
+}
+
+const MAX_RECONNECT_ATTEMPTS = 4
+
 function toRawBase64(imageUrl: string): string {
   const parts = imageUrl.split(',')
   return parts.length > 1 ? parts[1] : imageUrl
@@ -82,6 +90,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const websocketRef = useRef<WebSocket | null>(null)
   const reconnectAttemptsRef = useRef(0)
   const reconnectTimerRef = useRef<number | null>(null)
+  const exitTimerRef = useRef<number | null>(null)
+  const shouldStopReconnectRef = useRef(false)
   const animationTimerRef = useRef<number | null>(null)
 
   const playerSnapshot = roomState?.players[matchSession.playerId] || null
@@ -124,12 +134,37 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     setErrorMessage(null)
     setWinnerId(null)
     setIsConnected(false)
+    shouldStopReconnectRef.current = false
 
     const clearReconnectTimer = () => {
       if (reconnectTimerRef.current !== null) {
         window.clearTimeout(reconnectTimerRef.current)
         reconnectTimerRef.current = null
       }
+    }
+
+    const clearExitTimer = () => {
+      if (exitTimerRef.current !== null) {
+        window.clearTimeout(exitTimerRef.current)
+        exitTimerRef.current = null
+      }
+    }
+
+    const returnUserToHome = (message: string) => {
+      clearReconnectTimer()
+      clearExitTimer()
+      shouldStopReconnectRef.current = true
+      setErrorMessage(message)
+      setBattleLog((prev) => [...prev, message, 'Returning to collection...'])
+      const activeSocket = websocketRef.current
+      if (activeSocket && activeSocket.readyState === WebSocket.OPEN) {
+        activeSocket.close(4400, 'room-error')
+      }
+      exitTimerRef.current = window.setTimeout(() => {
+        if (!isDisposed) {
+          onExit()
+        }
+      }, 900)
     }
 
     const connect = () => {
@@ -155,11 +190,15 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         const incoming = JSON.parse(messageEvent.data) as WsEvent
 
         if (incoming.type === 'error') {
-          const payload = incoming.payload as { message?: string }
+          const payload = incoming.payload as WsErrorPayload
           const message = payload.message || 'Battle connection error'
           setErrorMessage(message)
           console.error(message)
           setBattleLog((prev) => [...prev, message])
+
+          if (payload.code === 'room_error' && payload.retryable !== true) {
+            returnUserToHome(message)
+          }
           return
         }
 
@@ -201,15 +240,19 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         }
         setIsConnected(false)
 
+        if (shouldStopReconnectRef.current) {
+          return
+        }
+
         const nextAttempt = reconnectAttemptsRef.current + 1
-        if (nextAttempt > 4) {
-          setBattleLog((prev) => [...prev, 'Could not connect to battle server. Please return and retry.'])
+        if (nextAttempt > MAX_RECONNECT_ATTEMPTS) {
+          returnUserToHome('Could not connect to battle server. Please retry from Home.')
           return
         }
 
         reconnectAttemptsRef.current = nextAttempt
         const retryDelayMs = Math.min(1200, nextAttempt * 300)
-        setBattleLog((prev) => [...prev, `Connection dropped. Retrying (${nextAttempt}/4)...`])
+        setBattleLog((prev) => [...prev, `Connection dropped. Retrying (${nextAttempt}/${MAX_RECONNECT_ATTEMPTS})...`])
         reconnectTimerRef.current = window.setTimeout(connect, retryDelayMs)
       }
     }
@@ -219,7 +262,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     return () => {
       isDisposed = true
       clearReconnectTimer()
+      clearExitTimer()
       reconnectAttemptsRef.current = 0
+      shouldStopReconnectRef.current = false
       if (animationTimerRef.current !== null) {
         window.clearTimeout(animationTimerRef.current)
         animationTimerRef.current = null
@@ -230,7 +275,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       }
       websocketRef.current = null
     }
-  }, [matchSession.playerId, triggerAttackAnimation, wsUrl])
+  }, [matchSession.playerId, onExit, triggerAttackAnimation, wsUrl])
 
   const handleMoveSelect = (move: Move) => {
     const websocket = websocketRef.current
